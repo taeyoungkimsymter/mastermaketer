@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -3 scripts/*)",
+      "Bash(python scripts/*)",
+      "Bash(python3 scripts/*)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(**/.env)",
+      "Read(**/secrets/**)",
+      "Read(clients/*/contacts/**)",
+      "Edit(clients/*/data/raw/**)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(git push *)",
+      "mcp__claude_ai_Slack__slack_send_message",
+      "mcp__claude_ai_Slack__slack_schedule_message",
+      "mcp__claude_ai_Slack__slack_create_conversation"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit|NotebookEdit|Glob|Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"${CLAUDE_PROJECT_DIR}/scripts/guard_paths.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

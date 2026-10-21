@@ -1,0 +1,179 @@
+{
+  "period": {
+    "start": "2026-09-01",
+    "end": "2026-09-30",
+    "days": 30,
+    "data_days": 30
+  },
+  "meta": {
+    "currency": "KRW",
+    "tax": "included",
+    "tz": "Asia/Seoul",
+    "attribution": "unknown",
+    "conversion_def": "앱 주문 완료",
+    "finalized": "yes",
+    "as_of": "2026-10-21",
+    "cvr_denominator": "클릭"
+  },
+  "excluded_or_flagged_rows": [],
+  "in_progress": false,
+  "current": {
+    "totals": {
+      "impressions": "386990.00",
+      "clicks": "7755.00",
+      "cost": "2243000.00",
+      "conversions": "308.00",
+      "revenue": "4466000.00",
+      "rows": 60,
+      "days": 30
+    },
+    "metrics": {
+      "ctr": "2.00",
+      "cpc": "289.23",
+      "cpm": "5796.02",
+      "cpa": "7282.47",
+      "cvr": "3.97",
+      "roas": "199.11"
+    },
+    "na_reasons": {}
+  },
+  "by_channel": {
+    "meta-ads": {
+      "totals": {
+        "impressions": "283495.00",
+        "clicks": "3221.00",
+        "cost": "837460.00",
+        "conversions": "51.00",
+        "revenue": "739500.00",
+        "rows": 30,
+        "days": 30
+      },
+      "metrics": {
+        "ctr": "1.14",
+        "cpc": "260.00",
+        "cpm": "2954.06",
+        "cpa": "16420.78",
+        "cvr": "1.58",
+        "roas": "88.30"
+      },
+      "na_reasons": {}
+    },
+    "naver-search": {
+      "totals": {
+        "impressions": "103495.00",
+        "clicks": "4534.00",
+        "cost": "1405540.00",
+        "conversions": "257.00",
+        "revenue": "3726500.00",
+        "rows": 30,
+        "days": 30
+      },
+      "metrics": {
+        "ctr": "4.38",
+        "cpc": "310.00",
+        "cpm": "13580.75",
+        "cpa": "5469.03",
+        "cvr": "5.67",
+        "roas": "265.13"
+      },
+      "na_reasons": {}
+    }
+  },
+  "comparison": {
+    "prev_period": {
+      "start": "2026-08-01",
+      "end": "2026-08-31",
+      "days": 31,
+      "data_days": 31
+    },
+    "prev_totals": {
+      "impressions": "393336.00",
+      "clicks": "7851.00",
+      "cost": "2268410.00",
+      "conversions": "311.00",
+      "revenue": "4509500.00",
+      "rows": 62,
+      "days": 31
+    },
+    "prev_metrics": {
+      "ctr": "2.00",
+      "cpc": "288.93",
+      "cpm": "5767.10",
+      "cpa": "7293.92",
+      "cvr": "3.96",
+      "roas": "198.80"
+    },
+    "prev_na_reasons": {},
+    "deltas": {
+      "impressions": {
+        "unit": "%",
+        "value": "-1.61",
+        "note": null
+      },
+      "clicks": {
+        "unit": "%",
+        "value": "-1.22",
+        "note": null
+      },
+      "cost": {
+        "unit": "%",
+        "value": "-1.12",
+        "note": null
+      },
+      "conversions": {
+        "unit": "%",
+        "value": "-0.96",
+        "note": null
+      },
+      "revenue": {
+        "unit": "%",
+        "value": "-0.96",
+        "note": null
+      },
+      "ctr": {
+        "unit": "%p",
+        "value": "0.01",
+        "note": null
+      },
+      "cpc": {
+        "unit": "%",
+        "value": "0.10",
+        "note": null
+      },
+      "cpm": {
+        "unit": "%",
+        "value": "0.50",
+        "note": null
+      },
+      "cpa": {
+        "unit": "%",
+        "value": "-0.16",
+        "note": null
+      },
+      "cvr": {
+        "unit": "%p",
+        "value": "0.01",
+        "note": null
+      },
+      "roas": {
+        "unit": "%p",
+        "value": "0.31",
+        "note": null
+      }
+    },
+    "daily_avg": {
+      "cur_cost": "74766.67",
+      "prev_cost": "73174.52",
+      "cur_conversions": "10.27",
+      "prev_conversions": "10.03"
+    }
+  },
+  "warnings": [
+    "어트리뷰션 기준 미확인",
+    "채널 간 전환·매출 중복 가능성: 각 매체가 자체 기준으로 집계한 전환/매출을 합산하면 실제보다 클 수 있음"
+  ],
+  "limitations": [
+    "기간 길이 불일치(30일 vs 31일): 총량(광고비·전환 등) 증감은 비교 근거로 쓰지 말고 일평균·비율 지표만 참고"
+  ],
+  "source_file": "data/raw/ads-2026-08_10.csv"
+}

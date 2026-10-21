@@ -1,0 +1,29 @@
+{
+  "_note": "채널 규격 레지스트리. status 가 'verified' 인 항목만 글자 수 초과를 FAIL로 판정한다. 아래 값은 일반적으로 알려진 참고값이며 어느 것도 공식 문서로 확인하지 않았다(checked_at=null). 담당자가 공식 도움말에서 확인한 뒤 source(URL), checked_at(YYYY-MM-DD), status='verified' 로 갱신할 것. count: 'len'=문자 수, 'cjk2'=한글·한자 등 전각 2칸.",
+  "specs": [
+    {
+      "channel": "google-search", "ad_format": "responsive-search-ad",
+      "fields": {"headline": {"max": 30}, "description": {"max": 90}},
+      "count": "cjk2", "status": "unverified", "source": null, "checked_at": null,
+      "memo": "한글 등 전각 문자를 2로 세는지 공식 문서로 확인 필요"
+    },
+    {
+      "channel": "naver-search", "ad_format": "text-ad",
+      "fields": {"title": {"max": 15}, "description": {"max": 45}},
+      "count": "len", "status": "unverified", "source": null, "checked_at": null,
+      "memo": "네이버 검색광고 가이드 확인 필요"
+    },
+    {
+      "channel": "instagram-feed", "ad_format": "caption",
+      "fields": {"caption": {"max": 2200}, "caption_visible_hint": {"max": 125}},
+      "count": "len", "status": "unverified", "source": null, "checked_at": null,
+      "memo": "caption_visible_hint 는 '더보기' 전 노출 권장 길이(하드 제한 아님) — 광고 형식별 확인 필요"
+    },
+    {
+      "channel": "meta-ads", "ad_format": "feed-image",
+      "fields": {"primary_text": {"max": 125}, "headline": {"max": 40}},
+      "count": "len", "status": "unverified", "source": null, "checked_at": null,
+      "memo": "권장 노출 길이 기준이며 하드 제한 여부 확인 필요"
+    }
+  ]
+}

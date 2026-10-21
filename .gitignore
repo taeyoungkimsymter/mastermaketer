@@ -1,0 +1,14 @@
+# 실자료는 버전 관리에서 제외 (샘플은 examples/ 에 있음)
+clients/*
+!clients/.gitkeep
+portfolio/approved-summaries/*
+!portfolio/approved-summaries/.gitkeep
+.agency-state/
+.claude/settings.local.json
+.env
+.env.*
+*.pem
+*.key
+secrets/
+__pycache__/
+*.pyc
