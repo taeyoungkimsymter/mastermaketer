@@ -1,0 +1,94 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 주니어 팀 샘플 뷰어</title><style>
+:root{--bg:#f7f7f5;--fg:#1d1d1b;--mut:#6b6b66;--card:#fff;--line:#e3e3de;--acc:#1f5eff}
+@media(prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ececea;--mut:#9a9a94;--card:#201f1d;--line:#34332f;--acc:#7da2ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,'Malgun Gothic',sans-serif}
+header{padding:20px 16px 0;max-width:980px;margin:auto}h1{font-size:1.35rem;margin:0 0 4px}.sub{color:var(--mut);font-size:.9rem}
+.tabs{display:flex;gap:4px;margin-top:16px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{background:none;border:0;padding:10px 14px;color:var(--mut);font:inherit;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--fg);border-color:var(--acc);font-weight:600}
+main{max-width:980px;margin:auto;padding:8px 16px 64px}section{display:none}section.on{display:block}
+h2{font-size:1.25rem;margin:1.6em 0 .4em}h3{font-size:1.05rem;margin:1.4em 0 .3em}h4{font-size:.95rem}
+.tw{overflow-x:auto;margin:.6em 0}table{border-collapse:collapse;width:100%;font-size:.9rem;background:var(--card)}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}th{background:var(--bg);font-weight:600}
+code{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:.9em}
+blockquote{margin:.6em 0;padding:4px 12px;border-left:3px solid var(--acc);color:var(--mut)}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}
+.k{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}.k span{display:block;color:var(--mut);font-size:.78rem}.k b{font-size:1.3rem}
+.warn{background:var(--card);border:1px solid var(--line);border-left:3px solid #d98e00;padding:8px 12px;border-radius:6px;font-size:.9rem}
+</style></head><body><header><h1>대행사 AI 주니어 팀 — 샘플 뷰어</h1>
+<div class="sub">가상 데이터 · AI 초안(사람 미검토) · 로컬 파일</div>
+<div class="tabs"><button class="on" data-t="a">개요</button><button data-t="b">리포트 예시</button><button data-t="c">검수 결과</button></div></header>
+<main><section id="a" class="on">
+<h2>이 화면은 무엇인가요</h2>
+<p>대행사 마케터용 AI 주니어 팀의 <b>가상 샘플 실행 결과</b>입니다. 실제 고객사 데이터가 아니며, AI가 만든 초안을 사람이 검토하지 않았습니다.</p>
+<h3>명령 7개 (Claude Code 안에서 실행)</h3>
+<div class='tw'><table><thead><tr><th>명령</th><th>하는 일</th><th>이 화면의 예시</th></tr></thead><tbody>
+<tr><td><code>/new-client</code></td><td>고객사 등록 인터뷰</td><td>—</td></tr>
+<tr><td><code>/copy</code></td><td>카피 3안 + 검수</td><td>—</td></tr>
+<tr><td><code>/report</code></td><td>성과 계산·해석·리포트</td><td><b>실행됨 (리포트·검수 탭)</b></td></tr>
+<tr><td><code>/meeting</code></td><td>회의록·피드백 후보</td><td>—</td></tr>
+<tr><td><code>/video</code></td><td>컨셉 3안 → 선택 → 콘티</td><td>—</td></tr>
+<tr><td><code>/shoot-plan</code></td><td>촬영 일정·콜시트·리스크</td><td>—</td></tr>
+<tr><td><code>/onset</code></td><td>현장 대응</td><td>—</td></tr></tbody></table></div>
+<h3>역할</h3><p>디렉터(메인 세션) · 리서처 · 전략 기획자 · 카피라이터 · PD · 퍼포먼스 분석가 · 리포트 작성자 · 커뮤니케이션 비서 · 독립 검수자</p>
+<h3>꼭 알아둘 점</h3><ul>
+<li>고객사 격리는 실수 방지 장치이며 보안 경계가 아닙니다 (docs/limitations.md).</li>
+<li>채널 글자 수 규격은 전부 미검증 상태입니다.</li>
+<li>AI 검수 통과 ≠ 사용자 승인 ≠ 법적 적합성 확정.</li></ul>
+</section>
+<section id="b"><div class="kp"><div class='k'><span>CTR %</span><b>2.00</b></div><div class='k'><span>CPC 원</span><b>289.23</b></div><div class='k'><span>CPM 원</span><b>5,796.02</b></div><div class='k'><span>CVR % (분모=클릭)</span><b>3.97</b></div><div class='k'><span>CPA 원</span><b>7,282.47</b></div><div class='k'><span>ROAS %</span><b>199.11</b></div></div><div class="warn">2026-09 (30일) 지표, 가상 샘플 데이터. 어트리뷰션·채널 간 중복은 미확인입니다.</div><h2>성과 리포트 — 2026-09 (2026-09-01 ~ 2026-09-30, 비교: 2026-08 전체)</h2>
+<p>고객사: demo-cafe / 프로젝트: general / 작업 ID: report-20261021 / 상태: 초안 (사용자 승인 전)</p>
+<h3>1. 요약 (3줄 이내)</h3>
+<ol><li>9월 전체 비율 지표는 8월과 사실상 같습니다(CTR +0.01%p, CVR +0.01%p, ROAS +0.31%p, CPA -0.16%). 기간 길이가 달라(30일 vs 31일) 총량 증감은 해석하지 않았습니다.</li><li>채널 격차가 큽니다. naver-search는 CPA 5,469.03 / ROAS 265.13 / CTR 4.38, meta-ads는 CPA 16,420.78 / ROAS 88.30 / CTR 1.14입니다.</li><li>어트리뷰션 기준이 미확인이고 채널 간 전환·매출 중복 가능성이 있어, 전체 합산값은 실제보다 크게 보일 수 있습니다. 채널별 8월 값이 없어 채널 내부의 월 대비 변화는 확인할 수 없습니다.</li></ol>
+<h3>2. 데이터 범위와 한계</h3>
+<p><b>데이터 범위</b></p>
+<ul><li>기간: 2026-09-01 ~ 09-30(30일). 비교 기간: 2026-08-01 ~ 08-31(31일, 전체).</li><li>광고비는 VAT 포함, 데이터는 확정(finalized), 전환 = 앱 주문 완료, CVR 분모 = 클릭.</li><li>제외·플래그 행 없음, 분모 0(N/A) 없음.</li></ul>
+<p><b>경고·제한 (분석 결과 그대로)</b></p>
+<ul><li>경고: 어트리뷰션 기준 미확인.</li><li>경고: 채널 간 전환·매출 중복 가능성. 각 매체가 자체 기준으로 집계한 값을 합산하면 실제보다 클 수 있습니다. 전체 전환 308건, 매출 4,466,000, ROAS 199.11은 중복 가능성이 있는 합산값입니다.</li><li>제한: 기간 길이 불일치(30일 vs 31일). 총량(광고비·전환 등) 증감은 비교 근거로 쓰지 않고 일평균·비율 지표만 참고합니다.</li><li>제한: 채널별 8월 값이 없어 채널 내부의 월 대비 변화는 확인할 수 없습니다.</li><li>미확인: 매출의 VAT 기준(광고비는 VAT 포함이므로 ROAS의 분자·분모 기준이 다를 수 있음).</li></ul>
+<h3>3. 계산으로 확인된 사실</h3>
+<p><b>전체 (비율·단가 지표)</b></p>
+<div class='tw'><table><thead><tr><th>지표</th><th>9월</th><th>8월</th><th>증감</th></tr></thead><tbody><tr><td>CTR</td><td>2.00</td><td>2.00</td><td>+0.01 %p</td></tr><tr><td>CPC</td><td>289.23</td><td>288.93</td><td>+0.10 %</td></tr><tr><td>CPM</td><td>5,796.02</td><td>5,767.10</td><td>+0.50 %</td></tr><tr><td>CVR</td><td>3.97</td><td>3.96</td><td>+0.01 %p</td></tr><tr><td>CPA</td><td>7,282.47</td><td>7,293.92</td><td>-0.16 %</td></tr><tr><td>ROAS</td><td>199.11</td><td>198.80</td><td>+0.31 %p</td></tr></tbody></table></div>
+<p><b>9월 전체 총량 (비교 근거로 사용하지 않음, 중복 가능성 있는 합산값 포함)</b></p>
+<div class='tw'><table><thead><tr><th>항목</th><th>9월</th><th>8월</th><th>증감</th></tr></thead><tbody><tr><td>노출</td><td>386,990</td><td>-</td><td>미사용(30일 vs 31일)</td></tr><tr><td>클릭</td><td>7,755</td><td>-</td><td>미사용</td></tr><tr><td>광고비</td><td>2,243,000</td><td>-</td><td>미사용</td></tr><tr><td>전환</td><td>308</td><td>-</td><td>미사용</td></tr><tr><td>매출</td><td>4,466,000</td><td>-</td><td>미사용</td></tr></tbody></table></div>
+<p>일평균(스크립트 산출): 광고비 9월 74,766.67 / 8월 73,174.52, 전환 9월 10.27 / 8월 10.03. 일평균 증감률은 스크립트가 산출하지 않아 기재하지 않습니다(추가 계산 필요).</p>
+<p><b>9월 채널별 (8월 채널별 값 없음)</b></p>
+<div class='tw'><table><thead><tr><th>채널</th><th>광고비</th><th>클릭</th><th>전환</th><th>매출</th><th>CTR</th><th>CPC</th><th>CPM</th><th>CVR</th><th>CPA</th><th>ROAS</th></tr></thead><tbody><tr><td>meta-ads</td><td>837,460</td><td>3,221</td><td>51</td><td>739,500</td><td>1.14</td><td>260.00</td><td>2,954.06</td><td>1.58</td><td>16,420.78</td><td>88.30</td></tr><tr><td>naver-search</td><td>1,405,540</td><td>4,534</td><td>257</td><td>3,726,500</td><td>4.38</td><td>310.00</td><td>13,580.75</td><td>5.67</td><td>5,469.03</td><td>265.13</td></tr></tbody></table></div>
+<h3>4. 데이터에서 관찰된 변화</h3>
+<ul><li>전체 비율·단가 지표(CTR, CVR, CPC, CPM, CPA, ROAS)의 8월 대비 변화는 모두 매우 작습니다. 이 데이터만으로 의미 있는 변화라고 단정할 근거는 없습니다.</li><li>채널 간 격차는 뚜렷합니다. naver-search는 CTR·CVR·ROAS가 높고 CPA가 낮으며, meta-ads는 반대입니다. 다만 중복 가능성과 어트리뷰션 미확인 때문에 격차의 크기는 조심해서 해석해야 합니다.</li><li>meta-ads는 CPC(260.00)가 naver-search(310.00)보다 낮지만 CPA는 더 높습니다.</li><li>채널 내부의 월 대비 변화는 확인할 수 없습니다.</li></ul>
+<h3>5. 원인 가설과 근거 (모두 가설, 검증 전)</h3>
+<ul><li>가설 A: 채널 역할이 다를 수 있습니다(naver-search는 검색 의도 수요, meta-ads는 구매 의도가 낮은 트래픽일 가능성). 근거: CTR·CVR 격차. 한계: 타깃팅·크리에이티브 데이터 없음.</li><li>가설 B: meta-ads의 CPA가 높은 원인은 클릭 단가보다 클릭 이후 전환율일 수 있습니다. 근거: CPC는 더 낮은데 CPA는 더 높음. 한계: 퍼널 데이터 없음.</li><li>가설 C: 매체별 어트리뷰션 방식 차이가 격차를 키웠을 수 있습니다(기준 미확인).</li><li>월 대비 변화가 거의 없는 이유는 이 데이터로 설명할 수 없습니다. 시즌·프로모션·경쟁사 등을 원인으로 단정하지 않습니다.</li></ul>
+<h3>6. 가설 검증에 필요한 추가 데이터</h3>
+<ul><li>매체별 어트리뷰션 설정, 앱 주문 완료 이벤트 정의의 매체 간 일치 여부</li><li>채널별 2026-08 데이터</li><li>앱 주문 DB/MMP 대조 실제 주문 수(채널 간 중복 확인)</li><li>meta-ads 캠페인·광고세트·크리에이티브별, naver-search 키워드별 성과</li><li>클릭 이후 퍼널 데이터</li><li>재고·시즌·프로모션·가격 변경, 예산·입찰 변경 이력</li><li>매출의 VAT 기준 확인</li></ul>
+<h3>7. 권장 액션</h3>
+<p>아래는 모두 검토 제안입니다. 광고 집행·예산 변경은 실행하지 않았으며, 고객사 결정 전까지 실행 대상이 아닙니다.</p>
+<div class='tw'><table><thead><tr><th>액션</th><th>담당자(후보)</th><th>기한(후보)</th><th>성공 판단 지표</th></tr></thead><tbody><tr><td>매체별 어트리뷰션 설정과 전환 이벤트 정의 확인</td><td>미정(고객사 마케팅 담당 후보)</td><td>미정</td><td>매체별 기준 문서화 및 일치 여부 판정</td></tr><tr><td>앱 주문 DB/MMP 대조로 실제 주문 수·중복 규모 확인</td><td>미정(고객사 데이터 담당 후보)</td><td>미정</td><td>합산 전환 308건 대비 실제 주문 수 확인</td></tr><tr><td>채널별 2026-08 데이터 확보 후 재분석 요청(분석가 전달)</td><td>미정(대행사 분석 담당 후보)</td><td>미정</td><td>채널 내부 월 대비 비교표 작성 가능</td></tr><tr><td>meta-ads 캠페인·크리에이티브별, naver-search 키워드별 성과 추출</td><td>미정</td><td>미정</td><td>채널 격차 원인 가설 A, B의 지지 또는 기각</td></tr><tr><td>채널 간 예산 배분 조정 여부 검토 제안(중복·어트리뷰션 확인 후 판단. 실행 아님)</td><td>미정(고객사 의사결정자 후보)</td><td>미정</td><td>중복 보정 후에도 채널 간 CPA·ROAS 격차 유지 여부</td></tr></tbody></table></div>
+<h3>출처·입력 파일</h3>
+<ul><li>clients/demo-cafe/data/processed/analysis-2026-09-01_2026-09-30-v1.json / .md</li><li>clients/demo-cafe/projects/general/research/analysis-memo-2026-09-v1.md</li><li>스크립트 source_file: data/raw/ads-2026-08_10.csv</li><li>agency/templates/report.md</li><li>활성 피드백 규칙: 없음. 브랜드 금지표현(최저가, 무조건, 다이어트) 미사용.</li></ul>
+<h3>가정·미확인 사항</h3>
+<ul><li>가정: 없음</li><li>미확인: 어트리뷰션 기준, 채널 간 중복, 매출 VAT 기준, 채널별 8월 값, 캠페인·크리에이티브 단위 원인, 재고·시즌·프로모션</li><li>추가 계산 필요: 일평균 증감률(스크립트 미산출)</li></ul>
+<h3>검수 결과</h3>
+<ul><li>상태: 초안 (AI 검수 통과 ≠ 사용자 승인 ≠ 법적 적합성 확정). 미검수.</li></ul>
+<h3>사용자 결정 필요</h3>
+<ul><li>권장 액션의 담당자·기한 지정 여부</li><li>채널별 8월 데이터·MMP 대조 자료를 요청할지 여부</li><li>예산 배분 검토를 어느 시점에 진행할지(실행은 별도 승인)</li></ul>
+<h3>다음 행동</h3>
+<ul><li>reviewer 검수 후 사용자 승인 대기</li><li>필요 시 분석가에게 일평균 증감률 및 채널별 8월 재분석 요청</li></ul></section>
+<section id="c"><h2>검수 — report-2026-09-v1 (작업 ID: report-20261021)</h2>
+<p>client_id: demo-cafe / project_id: general / 대상: deliverables/report-2026-09-v1.md / 상태: 초안(검수 결과)</p>
+<h3>판정: PASS (기계·AI 검수 통과)</h3>
+<p>필수 수정 없음. 아래 [참고] 항목은 선택 사항입니다.</p>
+<h3>항목별 결과</h3>
+<ol><li>수치 일치 [통과]: 전체 지표, 8월 지표, 증감(CTR +0.01%p, CVR +0.01%p, ROAS +0.31%p, CPC +0.10%, CPM +0.50%, CPA -0.16%), 총량, 채널별 표, 일평균 4개 값이 모두 분석 JSON과 일치합니다. 새 수치나 암산은 없습니다. 메타+네이버 합계(전환 51+257=308, 광고비 합계 2,243,000)는 JSON 총계와 맞습니다. 이는 눈으로 대조한 결과입니다.</li><li>warnings·limitations 노출 [통과]: 경고 2건과 제한 1건이 2절에 모두 있고, 1절에도 반영되어 있습니다. 채널별 8월 부재, 매출 VAT 미확인도 추가로 표기했습니다.</li><li>30일 vs 31일 [통과]: 총량 증감(JSON의 -1.61, -1.22 등)을 쓰지 않았고 &quot;미사용&quot;으로 표기했습니다. 일평균 증감률도 계산하지 않았습니다.</li><li>가설 표시 [통과]: 5절 제목과 항목에 &quot;가설, 검증 전&quot;을 명시했고 근거와 한계가 있습니다. 시즌·프로모션을 원인으로 단정하지 않았습니다.</li><li>템플릿 7섹션 [통과]: 섹션 1~7이 템플릿 제목 순서와 같고, 3절 표는 지표·이번·비교·증감(%, %p) 형식입니다. 권장 액션 표 열도 일치합니다. 공통 푸터 항목(출처, 가정·미확인, 검수, 결정 필요, 다음 행동)도 있습니다.</li><li>금지표현 [통과]: 최저가·무조건·다이어트와 최상급·보장 표현은 본문에 없습니다. 활성 피드백 규칙은 없고, 후보 피드백 적용 흔적도 없습니다. <code>copy_check.py</code>는 CSV 카피 전용(option,field,text)이라 이 md에는 실행할 수 없었습니다. 대신 grep으로 확인했습니다. 다른 고객사 정보 혼입은 없습니다.</li><li>집행·예산 변경 [통과]: 7절에서 &quot;실행하지 않았으며 고객사 결정 전까지 실행 대상 아님&quot;, &quot;실행 아님&quot;이라고 명시했습니다. 했다고 쓴 곳은 없습니다. 담당자·기한은 &quot;미정(후보)&quot;입니다.</li><li>사용자 제공 사실 [통과]: VAT 포함, 확정(finalized), 전환=앱 주문 완료, 비교=2026-08(31일 전체), 어트리뷰션 미확인이 모두 맞게 반영되었습니다. 매출 VAT 기준은 &quot;미확인&quot;으로 구분했습니다.</li></ol>
+<h3>참고 (선택, 심각/보통 없음)</h3>
+<ul><li>[참고] 91행: 금지표현 3개를 그대로 나열했습니다. 고객사 전달본에서 문구 스캔에 걸릴 수 있으니 &quot;브랜드 금지표현 미사용&quot;으로만 써도 됩니다.</li><li>[참고] 1절 요약의 각 항목이 길어 &quot;3줄 이내&quot; 취지에는 빠듯합니다. 내용상 문제는 아닙니다.</li><li>[참고] 1절 &quot;사실상 같습니다&quot;, &quot;격차가 큽니다&quot;는 해석 표현입니다. 근거(변화폭 0.01%p대, 채널 지표 격차)와 한계 문구가 함께 있어 허용 범위로 판단했습니다.</li><li>[참고] 3절 ROAS 증감을 &quot;%p&quot;로 표기한 것은 JSON의 단위 표기와 같습니다.</li></ul>
+<h3>출처·입력 파일</h3>
+<ul><li>clients/demo-cafe/data/processed/analysis-2026-09-01_2026-09-30-v1.json</li><li>clients/demo-cafe/projects/general/research/analysis-memo-2026-09-v1.md</li><li>clients/demo-cafe/brand.md, agency/templates/report.md</li><li>별도 <code>ad_report.py</code> 재실행은 하지 않았습니다. JSON과의 대조만 했습니다. 필요하면 디렉터가 재실행을 요청해 주세요.</li></ul>
+<h3>가정·미확인</h3>
+<ul><li>가정: 없음</li><li>미확인: 어트리뷰션, 채널 간 중복, 매출 VAT 기준 (리포트에 이미 반영됨)</li></ul>
+<h3>사용자 결정 필요</h3>
+<ul><li>리포트의 사용자 결정 3건(담당자·기한, 추가 자료 요청, 예산 배분 검토 시점)은 그대로 유효합니다.</li></ul>
+<h3>다음 행동</h3>
+<ul><li>디렉터가 상태를 갱신하고 사용자 승인을 요청합니다.</li></ul>
+<p>이 판정은 사용자 승인이나 법적 적합성 확정이 아닙니다.</p></section></main>
+<script>document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,section').forEach(e=>e.classList.remove('on'));b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on')})</script>
+</body></html>
