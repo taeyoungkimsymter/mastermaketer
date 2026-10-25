@@ -518,7 +518,7 @@ function checklistSteps() {
   return [
     { title: '담당자 배정', desc: 'AE · AP · CW · AD · PD · MP에 팀원 이름을 넣어요', cta: '배정하기', done: Object.keys(acc.team || {}).length > 0, act: teamModal },
     { title: '버디 캐릭터 붙이기', desc: '이 어카운트를 지켜볼 캐릭터를 골라요. 안 붙여도 앱 안 알림은 똑같이 보여요.', cta: '고르기', done: false, optional: true, hide: !!acc.char, act: buddyModal },
-    { title: 'Playbook 작성', desc: '브랜드 기본·타깃·운영 컨셉·톤앤매너를 채우면 체크돼요. Phase가 Concept로 넘어가요', cta: '작성하기', done: !!(S.pbLatest && S.pbLatest.latest_complete), act: () => goSub('account', 'playbook') },
+    { title: 'Playbook 작성', desc: '브랜드 기본·타깃·운영 컨셉·운영 채널·톤앤매너를 채우면 체크돼요. Phase가 Concept로 넘어가요', cta: '작성하기', done: !!(S.pbLatest && S.pbLatest.latest_complete), act: () => goSub('account', 'playbook') },
     { title: '첫 포스팅 일정 추가', desc: 'Account › Content Calendar에서 일정을 넣어요', cta: '일정 추가', done: S.lib.events.some(e => e.type === '콘텐츠'), act: async () => { S.calMode = 'list'; await goSub('account', 'cal'); postModal(); } },
     { title: '광고 데이터 연결', desc: '매체 CSV를 data/raw에 넣으면 Performance가 채워져요', cta: '방법 보기', done: (S.ws.inputs.raw || []).some(f => /\.(csv|xlsx|xlsm)$/i.test(f)), act: () => goSub('performance', 'media') },
   ].filter(x => !x.hide).map((x, i) => ({ ...x, no: i + 1, a }));
@@ -786,8 +786,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.drawer &
 /* ---------- Playbook (Account › Playbook): 팀과 AI가 콘텐츠를 만들 때마다 기준으로 삼는 운영 가이드. 저장할 때마다 v1, v2… 로 쌓인다 ---------- */
 const bannedWords = () => (((S.pbLatest || {}).data || {}).rules || {}).banned || [];
 const bannedHits = text => bannedWords().filter(w => w && text.includes(w));
+const OPCH = [['instagram', '인스타그램'], ['youtube-long', '유튜브(롱폼)'], ['youtube-shorts', '유튜브 쇼츠'], ['tiktok', '틱톡'], ['naver-blog', '네이버 블로그'], ['threads', '스레드']];
+const CH_ROLES = ['인지', '관심', '전환', '커뮤니티'];
 const pbBlank = () => ({ brand: {}, target: { core: [{}], secondary: '' }, concept: { line: '', pillars: [{}, {}, {}] }, tone: { keywords: ['', '', ''], speech: '', emoji: '', do: ['', ''], dont: ['', ''] },
-  positioning: { competitors: ['', '', ''] }, visual: { links: [] }, channels: { rows: [] }, kpi: { rows: [], cycle: '' }, rules: { banned: [] } });
+  positioning: { competitors: ['', '', ''] }, visual: { links: [] }, channels: [], kpi: { rows: [], cycle: '' }, rules: { banned: [] } });
 function pbSummaryHtml(tabId) {
   const d = S.pbLatest && S.pbLatest.data;
   const go = '<button class="lnk acc" data-brief>Playbook 열기 ›</button>';
@@ -829,6 +831,8 @@ async function viewPlaybook() {
   const latest = P.versions.length ? P.versions[P.versions.length - 1].n : 0, viewing = P.n || 0;
   if (viewing === latest) S.pbLatest = P;
   const d = Object.assign(pbBlank(), P.data || {});
+  if (!Array.isArray(d.channels)) d.channels = [];
+  if (!d.kpi || !Array.isArray(d.kpi.rows)) d.kpi = { rows: [], cycle: '' };
   const sec = P.sections || {}, inp = (path, val, ph, extra = '') => `<input class="in" data-f="${path}" value="${esc(val ?? '')}" placeholder="${esc(ph)}" ${extra}>`;
   const ta = (path, val, ph, n = 300) => `<textarea class="in" data-f="${path}" maxlength="${n}" placeholder="${esc(ph)}">${esc(val ?? '')}</textarea>`;
   const fld = (label, html, hint, req) => `<div class="field"><span class="lbl">${label}${req ? '<span class="req">*</span>' : ''}</span>${html}${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
@@ -843,7 +847,7 @@ async function viewPlaybook() {
   $('#view').innerHTML = `<div class="stack playbook">
     <div class="fbar"><b class="mth">${latest ? `Playbook v${viewing}` : '새 Playbook'}</b>${latest ? `<select class="in sm" id="pVer" style="width:auto" aria-label="버전 선택">${P.versions.slice().reverse().map(x => `<option value="${x.n}" ${x.n === viewing ? 'selected' : ''}>v${x.n}${x.n === latest ? ' (최신)' : ''} · ${esc((x.saved_at || '').slice(5, 16).replace('T', ' '))}</option>`).join('')}</select>` : '<span class="muted">팀과 AI가 콘텐츠를 만들 때마다 기준으로 삼는 문서예요. 아는 만큼 적고 저장하세요.</span>'}
       <span class="spacer"></span><button class="btn pri" id="pSave">${latest ? `새 버전(v${latest + 1})으로 저장` : 'Playbook 저장 (v1)'}</button></div>
-    <div class="row" style="gap:8px;flex-wrap:wrap">${[['brand', '브랜드 기본'], ['target', '타깃'], ['concept', '운영 컨셉'], ['tone', '톤앤매너']].map(([k, l]) => `<span class="pill-s ${sec[k] ? 'ok' : ''}">${sec[k] ? '✓' : '○'} ${l}</span>`).join('')}<span class="muted" style="font-size:12.5px">필수 4섹션이 채워지면 Phase가 Concept로 넘어가요.</span></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">${[['brand', '브랜드 기본'], ['target', '타깃'], ['concept', '운영 컨셉'], ['channels', '운영 채널'], ['tone', '톤앤매너']].map(([k, l]) => `<span class="pill-s ${sec[k] ? 'ok' : ''}">${sec[k] ? '✓' : '○'} ${l}</span>`).join('')}<span class="muted" style="font-size:12.5px">필수 5섹션이 채워지면 Phase가 Concept로 넘어가요.</span></div>
     ${latest && viewing !== latest ? `<div class="note info">v${viewing}을 보고 있어요. 저장하면 이 내용을 바탕으로 v${latest + 1}이 새로 쌓여요(기존 버전은 그대로).</div>` : ''}
     <form id="pForm" class="stack" autocomplete="off">
     ${reqSec('brand', '브랜드 기본', '브랜드가 누구이고 무엇을 파는지.', `<div class="grid2">${fld('브랜드명', inp('brand.name', d.brand.name, '예: 모카나루', 'maxlength="40"'), '', true)}${fld('카테고리', inp('brand.category', d.brand.category, '예: 스페셜티 카페', 'maxlength="40"'))}</div>
@@ -852,6 +856,7 @@ async function viewPlaybook() {
       ${fld('보조 타깃', ta('target.secondary', d.target.secondary, '핵심은 아니지만 함께 고려할 타깃', 200))}`)}
     ${reqSec('concept', '운영 컨셉', '계정을 어떤 컨셉으로 운영하는지, 콘텐츠를 어떤 기둥으로 채우는지(3~4개).', `${fld('컨셉 한 줄', inp('concept.line', d.concept.line, '예: 하루를 깨우는 한 잔의 이야기', 'maxlength="120"'))}
       <div class="field"><span class="lbl">콘텐츠 기둥 <small class="muted" id="pillarSum"></small></span>${rowsHtml('pillar', pillars, r => `<div class="lrow k3p"><input class="in" value="${esc(r.name || '')}" placeholder="기둥 이름" maxlength="40"><input class="in" value="${esc(r.desc || '')}" placeholder="설명" maxlength="160"><input class="in w" type="number" min="0" max="100" value="${esc(r.weight ?? '')}" placeholder="비중%">${del}</div>`, 4, '+ 기둥 추가')}</div>`)}
+    ${reqSec('channels', '운영 채널', '채널마다 기획이 달라요(유튜브·쇼츠·틱톡·인스타·블로그). 운영하는 채널을 고르면 채널마다 카드가 생겨요. 일정·카피·리포트가 이 채널 기준으로 정리돼요.', `<div class="chpick" id="chPick">${OPCH.map(([id, l]) => `<label class="pick"><input type="checkbox" data-chk="${id}" ${d.channels.some(c => c.id === id) ? 'checked' : ''}><span>${l}</span></label>`).join('')}<button type="button" class="btn sm" id="chCustom">+ 기타 채널 (직접 입력)</button></div><div class="chcards" id="chCards"></div>`)}
     ${reqSec('tone', '톤앤매너', '글을 어떻게 쓰는지. AI 카피 명령도 이 내용을 따릅니다.', `<div class="field"><span class="lbl">성격 키워드 3개</span><div class="row">${kw.map(k => `<input class="in" data-kw value="${esc(k)}" placeholder="예: 다정한" maxlength="20">`).join('')}</div></div>
       <div class="grid2">${fld('말투', `<select class="in" data-f="tone.speech"><option value="">선택</option>${opt(['존댓말', '반말'], d.tone.speech)}</select>`)}${fld('이모지', `<select class="in" data-f="tone.emoji"><option value="">선택</option>${opt(['사용', '가끔', '미사용'], d.tone.emoji)}</select>`)}</div>
       <div class="field"><span class="lbl">이렇게 쓴다 (예문 2개)</span>${dos.map(x => `<input class="in" data-do value="${esc(x)}" placeholder="예: 오늘은 천천히 시작해요" maxlength="160" style="margin-bottom:6px">`).join('')}</div>
@@ -859,8 +864,7 @@ async function viewPlaybook() {
     ${optSec('포지셔닝', '경쟁 브랜드 대비 어디에 서 있는지.', d.positioning, `<div class="field"><span class="lbl">경쟁 브랜드 (2~3개)</span><div class="row">${comps.map(x => `<input class="in" data-comp value="${esc(x)}" placeholder="브랜드명" maxlength="40">`).join('')}</div></div>${fld('차별점', ta('positioning.diff', d.positioning.diff, '', 200))}${fld('브랜드 약속 한 문장', inp('positioning.promise', d.positioning.promise, '', 'maxlength="160"'))}`)}
     ${optSec('비주얼 가이드', '색·무드·레퍼런스. Art 탭 상단에 요약돼요.', d.visual, `<div class="grid2">${fld('메인 컬러', inp('visual.color', d.visual.color, '예: #1B1A4B 네이비', 'maxlength="60"'))}${fld('무드 키워드', inp('visual.mood', d.visual.mood, '예: 차분한, 따뜻한, 미니멀', 'maxlength="100"'))}</div>
       <div class="field"><span class="lbl">레퍼런스 링크</span>${rowsHtml('vlink', d.visual.links.length ? d.visual.links : [''], v => `<div class="lrow"><input class="in" value="${esc(v)}" placeholder="https://" maxlength="300">${del}</div>`, 10, '+ 링크 추가')}</div>${fld('피해야 할 표현', ta('visual.avoid', d.visual.avoid, '쓰지 않는 색·이미지·연출', 200))}`)}
-    ${optSec('채널 운영', '채널마다 역할과 업로드 계획. 주간 업로드 횟수는 이후 Content Calendar 알림에 쓰여요.', d.channels, rowsHtml('chan', d.channels.rows.length ? d.channels.rows : [{}], r => `<div class="lrow k4"><input class="in" value="${esc(r.channel || '')}" placeholder="채널 (예: 인스타그램)" maxlength="30"><input class="in" value="${esc(r.role || '')}" placeholder="역할" maxlength="100"><input class="in w" type="number" min="0" max="50" value="${esc(r.weekly ?? '')}" placeholder="주 N회"><input class="in" value="${esc(r.format || '')}" placeholder="주력 포맷" maxlength="60">${del}</div>`, 8, '+ 채널 추가'))}
-    ${optSec('목표·KPI', '채널별 지표와 목표치. 목표치를 모르면 비워 두세요(지어내지 않아요).', d.kpi, `${rowsHtml('kpi', d.kpi.rows.length ? d.kpi.rows : [{}], r => `<div class="lrow k3"><input class="in" value="${esc(r.channel || '')}" placeholder="채널" maxlength="30"><input class="in" value="${esc(r.metric || '')}" placeholder="지표 (예: 도달)" maxlength="40"><input class="in" value="${esc(r.target || '')}" placeholder="목표치 (예: 월 5만)" maxlength="40">${del}</div>`, 10, '+ 지표 추가')}${fld('점검 주기', `<select class="in" data-f="kpi.cycle" style="max-width:160px"><option value="">선택</option>${opt(['주간', '격주', '월간'], d.kpi.cycle)}</select>`)}`)}
+    ${optSec('목표·KPI', '계정 전체의 지표와 목표치(채널별 목표는 운영 채널 카드에). 목표치를 모르면 비워 두세요(지어내지 않아요).', d.kpi, `${rowsHtml('kpi', d.kpi.rows.length ? d.kpi.rows : [{}], r => `<div class="lrow k3"><input class="in" value="${esc(r.metric || '')}" placeholder="지표 (예: 월 전환수)" maxlength="40"><input class="in" value="${esc(r.target || '')}" placeholder="목표치" maxlength="40">${del}</div>`, 10, '+ 지표 추가')}${fld('점검 주기', `<select class="in" data-f="kpi.cycle" style="max-width:160px"><option value="">선택</option>${opt(['주간', '격주', '월간'], d.kpi.cycle)}</select>`)}`)}
     ${optSec('금지·주의', '금지어는 AI 카피 검수에 바로 쓰이고, 결과물에 들어 있으면 경고해요.', d.rules, `${fld('금지어', ta('rules.banned', (d.rules.banned || []).join(', '), '쉼표나 줄바꿈으로 구분 (예: 최고, 무조건)', 600), '카피에 이 단어가 있으면 경고가 떠요.')}${fld('법적·심의 주의사항', ta('rules.legal', d.rules.legal, '', 300))}${fld('경쟁사 언급 규칙', inp('rules.competitor_rule', d.rules.competitor_rule, '예: 경쟁사 이름은 직접 쓰지 않는다', 'maxlength="200"'))}`)}
     </form>
     <section class="card pad pbs"><div class="pbh"><h2>캠페인</h2><button class="btn sm pri" id="cAdd">+ 캠페인 추가</button></div><p class="muted">Playbook 기준 아래에서 진행하는 캠페인을 여러 개 쌓아 둘 수 있어요. 추가·수정하면 바로 저장돼요.</p>
@@ -878,6 +882,47 @@ async function viewPlaybook() {
   bindDel();
   const sumP = () => { const t = rowsOf('pillar').reduce((n, r) => n + (+r.querySelector('.w').value || 0), 0); $('#pillarSum').textContent = t ? `· 비중 합계 ${t}%${t > 100 ? ' (100% 이하로 맞춰 주세요)' : ''}` : ''; };
   v.addEventListener('input', e => { if (e.target.closest('[data-list="pillar"]')) sumP(); }); sumP();
+  /* 운영 채널 카드: 체크한 채널마다 카드. 저장하면 어카운트의 channels.json 에도 현재 값이 기록된다. */
+  let cards = d.channels.map(x => ({ ...x, kpi: (x.kpi || []).map(k => ({ ...k })) }));
+  const isCustom = c => /^custom-/.test(c.id);
+  const harvest = () => {
+    v.querySelectorAll('#chCards .chcard').forEach(el => {
+      const c = cards.find(x => x.id === el.dataset.ch); if (!c) return;
+      const g = k => { const i = el.querySelector(`[data-k="${k}"]`); return i ? i.value.trim() : ''; };
+      c.role = g('role'); c.weekly = g('weekly'); c.format = g('format'); c.handle = g('handle'); c.tone_diff = g('tone_diff'); if (isCustom(c)) c.label = g('label');
+      c.kpi = [...el.querySelectorAll('.krow')].map(r => { const i = r.querySelectorAll('input'); return { metric: i[0].value.trim(), target: i[1].value.trim() }; });
+    });
+    return cards;
+  };
+  const drawCards = () => {
+    $('#chCards').innerHTML = cards.length ? cards.map(c => `<div class="chcard" data-ch="${esc(c.id)}"><div class="chh"><b>${isCustom(c) ? '기타' : esc(c.label)}</b>${isCustom(c) ? `<input class="in sm" data-k="label" value="${esc(c.label || '')}" placeholder="채널 이름" maxlength="30" style="max-width:200px">` : ''}<span class="spacer"></span>${isCustom(c) ? '<button type="button" class="lnk" data-chdel>삭제</button>' : ''}</div>
+      <div class="grid2"><label class="field"><span class="lbl">역할<span class="req">*</span></span><select class="in" data-k="role"><option value="">선택</option>${CH_ROLES.map(r => `<option ${c.role === r ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+        <label class="field"><span class="lbl">주간 업로드 횟수</span><input class="in" type="number" min="0" max="50" data-k="weekly" value="${esc(c.weekly ?? '')}" placeholder="주 N회"></label></div>
+      <div class="grid2"><label class="field"><span class="lbl">주력 포맷</span><input class="in" data-k="format" value="${esc(c.format || '')}" placeholder="예: 릴스, 카드뉴스" maxlength="60"></label>
+        <label class="field"><span class="lbl">계정 핸들</span><input class="in" data-k="handle" value="${esc(c.handle || '')}" placeholder="예: @mocanaru" maxlength="40"></label></div>
+      <label class="field"><span class="lbl">톤 차이 <small class="muted">기본 톤앤매너와 다른 점만</small></span><textarea class="in" data-k="tone_diff" maxlength="300" placeholder="예: 쇼츠는 첫 문장을 더 짧고 직설적으로">${esc(c.tone_diff || '')}</textarea></label>
+      <div class="field"><span class="lbl">채널별 KPI</span>${(c.kpi.length ? c.kpi : [{}]).map((k, i) => `<div class="lrow krow"><input class="in" value="${esc(k.metric || '')}" placeholder="지표 (예: 조회수)" maxlength="40"><input class="in" value="${esc(k.target || '')}" placeholder="목표치" maxlength="40"><button type="button" class="lnk" data-kdel="${i}" aria-label="줄 삭제">✕</button></div>`).join('')}<button type="button" class="btn sm" data-kadd>+ 지표 추가</button></div></div>`).join('')
+      : '<p class="muted" style="margin:8px 0 0">운영하는 채널을 체크하면 카드가 생겨요. 채널 없이는 필수 섹션이 채워지지 않아요.</p>';
+  };
+  drawCards();
+  v.querySelectorAll('[data-chk]').forEach(b => b.onchange = () => {
+    harvest();
+    if (b.checked) { const lab = OPCH.find(x => x[0] === b.dataset.chk)[1]; if (!cards.some(c => c.id === b.dataset.chk)) cards.push({ id: b.dataset.chk, label: lab, role: '', weekly: '', format: '', handle: '', tone_diff: '', kpi: [] }); }
+    else cards = cards.filter(c => c.id !== b.dataset.chk);
+    const order = OPCH.map(x => x[0]); cards.sort((a, b2) => (order.indexOf(a.id) < 0 ? 99 : order.indexOf(a.id)) - (order.indexOf(b2.id) < 0 ? 99 : order.indexOf(b2.id)) || a.id.localeCompare(b2.id));
+    drawCards();
+  });
+  $('#chCustom').onclick = () => {
+    harvest(); const free = [1, 2, 3].map(n => `custom-${n}`).find(id => !cards.some(c => c.id === id));
+    if (!free) return toast('기타 채널은 3개까지 추가할 수 있어요.', 'bad');
+    cards.push({ id: free, label: '', role: '', weekly: '', format: '', handle: '', tone_diff: '', kpi: [] }); drawCards();
+  };
+  $('#chCards').addEventListener('click', e => {
+    const card = e.target.closest('.chcard'); if (!card) return; const c = () => cards.find(x => x.id === card.dataset.ch);
+    if (e.target.closest('[data-chdel]')) { harvest(); cards = cards.filter(x => x.id !== card.dataset.ch); drawCards(); }
+    else if (e.target.closest('[data-kadd]')) { harvest(); c().kpi.push({ metric: '', target: '' }); drawCards(); }
+    else if (e.target.closest('[data-kdel]')) { harvest(); c().kpi.splice(+e.target.closest('[data-kdel]').dataset.kdel, 1); drawCards(); }
+  });
   const ver = $('#pVer'); if (ver) ver.onchange = () => { S.pbSel = +ver.value; viewPlaybook(); };
   $('#cAdd').onclick = () => campaignModal();
   v.querySelectorAll('[data-ce]').forEach(b => b.onclick = () => campaignModal(S.lib.campaigns.find(c => c.id === b.dataset.ce)));
@@ -893,8 +938,8 @@ async function viewPlaybook() {
     setp('tone.dont', [...form.querySelectorAll('[data-dont]')].map(x => x.value.trim()));
     setp('positioning.competitors', [...form.querySelectorAll('[data-comp]')].map(x => x.value.trim()));
     setp('visual.links', q('vlink').map(r => r[0]));
-    setp('channels.rows', q('chan').map(([channel, role, weekly, format]) => ({ channel, role, weekly, format })));
-    setp('kpi.rows', q('kpi').map(([channel, metric, target]) => ({ channel, metric, target })));
+    setp('channels', harvest().map(c => ({ id: c.id, label: c.label, role: c.role, weekly: c.weekly, format: c.format, handle: c.handle, tone_diff: c.tone_diff, kpi: c.kpi })));
+    setp('kpi.rows', q('kpi').map(([metric, target]) => ({ metric, target })));
     const r = await api('/api/playbook', { fields: f });
     S.pbSel = null; S.pbLatest = r; toast(`Playbook v${r.saved}을(를) 저장했습니다.`, 'ok');
     await loadAccounts(); renderSide(); renderAcctHead(); viewPlaybook();

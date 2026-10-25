@@ -183,8 +183,17 @@ def playbook_bans(client_id):
     return [w for w in ((d or {}).get("rules") or {}).get("banned", []) if w]
 
 
+def channels_current(client_id):
+    """clients/{id}/channels.json 의 운영 채널 카드 목록(다른 화면이 읽는 현재 값). 없으면 빈 리스트."""
+    try:
+        d = json.loads((client_dir(client_id) / "channels.json").read_text(encoding="utf-8"))
+        return d.get("channels", []) if isinstance(d, dict) else []
+    except (OSError, ValueError):
+        return []
+
+
 def playbook_complete(d):
-    """필수 4섹션(브랜드 기본·타깃·운영 컨셉·톤앤매너)이 모두 채워졌는지와 섹션별 결과."""
+    """필수 5섹션(브랜드 기본·타깃·운영 컨셉·운영 채널·톤앤매너)이 모두 채워졌는지와 섹션별 결과."""
     d = d or {}
     b, t, k, tn = d.get("brand") or {}, d.get("target") or {}, d.get("concept") or {}, d.get("tone") or {}
     core = (t.get("core") or [{}])[0] if t.get("core") else {}
@@ -192,6 +201,7 @@ def playbook_complete(d):
         "brand": all(b.get(x) for x in ("name", "category", "tagline", "products")),
         "target": all(core.get(x) for x in ("age", "situation", "pain")),
         "concept": bool(k.get("line")) and sum(1 for p in (k.get("pillars") or []) if p.get("name")) >= 3,
+        "channels": bool(d.get("channels")) and all(x.get("role") for x in d["channels"]),
         "tone": sum(1 for w in (tn.get("keywords") or []) if w) >= 3 and bool(tn.get("speech")) and bool(tn.get("emoji"))
         and sum(1 for w in (tn.get("do") or []) if w) >= 2 and sum(1 for w in (tn.get("dont") or []) if w) >= 2,
     }

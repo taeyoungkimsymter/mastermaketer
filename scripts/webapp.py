@@ -1076,6 +1076,10 @@ def launch_buddy():
 PB_SPEECH = ("존댓말", "반말")
 PB_EMOJI = ("사용", "가끔", "미사용")
 PB_CYCLE = ("주간", "격주", "월간")
+# 운영 채널: 시스템의 기본 단위. 일정·카피·리포트가 어느 채널용인지 이 id 로 가리킨다(기타는 custom-1~3).
+OP_CHANNELS = {"instagram": "인스타그램", "youtube-long": "유튜브(롱폼)", "youtube-shorts": "유튜브 쇼츠", "tiktok": "틱톡",
+               "naver-blog": "네이버 블로그", "threads": "스레드"}
+CH_ROLES = ("인지", "관심", "전환", "커뮤니티")
 
 
 def playbook_dir(client):
@@ -1115,16 +1119,46 @@ def _num(v, lo, hi, what):
     try:
         x = int(v)
     except ValueError:
-        raise AgencyError(f"{what}은 숫자로 입력하세요.")
+        raise AgencyError(f"{what}: 숫자로 입력하세요.")
     if not lo <= x <= hi:
-        raise AgencyError(f"{what}은 {lo}~{hi} 사이여야 합니다.")
+        raise AgencyError(f"{what}: {lo}~{hi} 사이여야 합니다.")
     return x
+
+
+def _channels_clean(lst):
+    out, seen = [], set()
+    for r in (lst if isinstance(lst, list) else [])[:10]:
+        r = r if isinstance(r, dict) else {}
+        cid = _t(r.get("id"), 20)
+        if cid in OP_CHANNELS:
+            label = OP_CHANNELS[cid]
+        elif re.fullmatch(r"custom-[1-3]", cid):
+            label = _t(r.get("label"), 30)
+            if not label:
+                raise AgencyError("기타 채널의 이름을 입력하세요.")
+        else:
+            raise AgencyError("알 수 없는 채널입니다.")
+        if cid in seen:
+            continue
+        seen.add(cid)
+        role = _t(r.get("role"), 10)
+        if role and role not in CH_ROLES:
+            raise AgencyError(f"{label}: 역할 값이 올바르지 않습니다.")
+        kpi = []
+        for k in (r.get("kpi") or [])[:5]:
+            k = k if isinstance(k, dict) else {}
+            row = {"metric": _t(k.get("metric"), 40), "target": _t(k.get("target"), 40)}
+            if any(row.values()):
+                kpi.append(row)
+        out.append({"id": cid, "label": label, "role": role, "weekly": _num(r.get("weekly"), 0, 50, f"{label} 주간 업로드 횟수"),
+                    "format": _t(r.get("format"), 60), "tone_diff": _t(r.get("tone_diff"), 300), "handle": _t(r.get("handle"), 40), "kpi": kpi})
+    return out
 
 
 def _pb_clean(f):
     f = f if isinstance(f, dict) else {}
     g = lambda k: f.get(k) if isinstance(f.get(k), dict) else {}  # noqa: E731
-    b, t, k, tn, po, vi, ch, kp, ru = (g(x) for x in ("brand", "target", "concept", "tone", "positioning", "visual", "channels", "kpi", "rules"))
+    b, t, k, tn, po, vi, kp, ru = (g(x) for x in ("brand", "target", "concept", "tone", "positioning", "visual", "kpi", "rules"))
     out = {"brand": {"name": _t(b.get("name"), 40), "category": _t(b.get("category"), 40), "tagline": _t(b.get("tagline"), 100), "products": _t(b.get("products"), 200)}}
     if not out["brand"]["name"]:
         raise AgencyError("브랜드명을 입력하세요.")
@@ -1159,17 +1193,11 @@ def _pb_clean(f):
                 raise AgencyError("레퍼런스 링크는 http:// 또는 https:// 로 시작해야 합니다.")
             links.append(v)
     out["visual"] = {"color": _t(vi.get("color"), 60), "mood": _t(vi.get("mood"), 100), "links": links, "avoid": _t(vi.get("avoid"), 200)}
-    rows = []
-    for r in (ch.get("rows") or [])[:8]:
-        r = r if isinstance(r, dict) else {}
-        row = {"channel": _t(r.get("channel"), 30), "role": _t(r.get("role"), 100), "weekly": _num(r.get("weekly"), 0, 50, "주간 업로드 횟수"), "format": _t(r.get("format"), 60)}
-        if row["channel"] or row["role"] or row["format"] or row["weekly"] is not None:
-            rows.append(row)
-    out["channels"] = {"rows": rows}
+    out["channels"] = _channels_clean(f.get("channels"))
     krows = []
     for r in (kp.get("rows") or [])[:10]:
         r = r if isinstance(r, dict) else {}
-        row = {"channel": _t(r.get("channel"), 30), "metric": _t(r.get("metric"), 40), "target": _t(r.get("target"), 40)}
+        row = {"metric": _t(r.get("metric"), 40), "target": _t(r.get("target"), 40)}
         if any(row.values()):
             krows.append(row)
     cyc = _t(kp.get("cycle"), 10)
@@ -1185,21 +1213,27 @@ def _pb_clean(f):
 
 def _pb_md(client, n, d, saved_at):
     v = lambda x: x if x else "미정"  # noqa: E731
-    b, t, k, tn, po, vi, ch, kp, ru = (d[x] for x in ("brand", "target", "concept", "tone", "positioning", "visual", "channels", "kpi", "rules"))
+    b, t, k, tn, po, vi, kp, ru = (d[x] for x in ("brand", "target", "concept", "tone", "positioning", "visual", "kpi", "rules"))
+    chs = d.get("channels") or []
     L = [f"# Playbook v{n}: {b['name']}", "", f"> client_id: {client} · 저장 {saved_at} · 콘텐츠를 만들 때마다 이 문서를 기준으로 삼는다. 모르는 항목은 \"미정\"이며 지어내지 않는다.", "",
          "## 브랜드 기본", f"- 브랜드명: {b['name']}", f"- 카테고리: {v(b['category'])}", f"- 한 줄 소개: {v(b['tagline'])}", f"- 핵심 제품·서비스: {v(b['products'])}", "",
          "## 타깃", "- 핵심 페르소나:"]
     L += [f"  - {r['age'] or '미정'} / 상황: {r['situation'] or '미정'} / 고민: {r['pain'] or '미정'}" for r in t["core"]] or ["  - 미정"]
     L += [f"- 보조 타깃: {v(t['secondary'])}", "", "## 운영 컨셉", f"- 컨셉 한 줄: {v(k['line'])}", "- 콘텐츠 기둥:"]
     L += [f"  - {r['name'] or '미정'}" + (f" ({r['weight']}%)" if r["weight"] is not None else "") + (f" — {r['desc']}" if r["desc"] else "") for r in k["pillars"]] or ["  - 미정"]
+    L += ["", "## 운영 채널 (채널마다 기획이 다르다. 콘텐츠를 만들 때 해당 채널 항목을 따른다)"]
+    for r in chs:
+        L += [f"- {r['label']} ({r['id']})", f"  - 역할: {v(r['role'])}", f"  - 주간 업로드: {str(r['weekly']) + '회' if r['weekly'] is not None else '미정'}", f"  - 주력 포맷: {v(r['format'])}",
+              f"  - 계정 핸들: {v(r['handle'])}", f"  - 기본 톤과 다른 점: {v(r['tone_diff'])}",
+              "  - KPI: " + (", ".join(f"{k['metric'] or '미정'} {k['target'] or '미정'}" for k in r["kpi"]) or "미정")]
+    if not chs:
+        L += ["- 미정"]
     L += ["", "## 톤앤매너", f"- 성격 키워드: {', '.join(tn['keywords']) or '미정'}", f"- 말투: {v(tn['speech'])}", f"- 이모지: {v(tn['emoji'])}", "- 이렇게 쓴다:"]
     L += [f"  - {x}" for x in tn["do"]] or ["  - 미정"]
     L += ["- 이렇게 안 쓴다:"] + ([f"  - {x}" for x in tn["dont"]] or ["  - 미정"])
     L += ["", "## 포지셔닝 (선택)", f"- 경쟁 브랜드: {', '.join(po['competitors']) or '미정'}", f"- 차별점: {v(po['diff'])}", f"- 브랜드 약속: {v(po['promise'])}",
-          "", "## 비주얼 가이드 (선택)", f"- 메인 컬러: {v(vi['color'])}", f"- 무드 키워드: {v(vi['mood'])}", f"- 레퍼런스 링크: {', '.join(vi['links']) or '미정'}", f"- 피해야 할 표현: {v(vi['avoid'])}",
-          "", "## 채널 운영 (선택)"]
-    L += [f"- {r['channel'] or '채널 미정'}: 역할 {v(r['role'])} / 주간 업로드 {r['weekly'] if r['weekly'] is not None else '미정'}회 / 주력 포맷 {v(r['format'])}" for r in ch["rows"]] or ["- 미정"]
-    L += ["", "## 목표·KPI (선택)"] + ([f"- {r['channel'] or '전체'} · {r['metric'] or '미정'}: {r['target'] or '미정'}" for r in kp["rows"]] or ["- 미정"]) + [f"- 점검 주기: {v(kp['cycle'])}"]
+          "", "## 비주얼 가이드 (선택)", f"- 메인 컬러: {v(vi['color'])}", f"- 무드 키워드: {v(vi['mood'])}", f"- 레퍼런스 링크: {', '.join(vi['links']) or '미정'}", f"- 피해야 할 표현: {v(vi['avoid'])}"]
+    L += ["", "## 목표·KPI (선택)"] + ([f"- 계정 전체 · {r['metric'] or '미정'}: {r['target'] or '미정'}" for r in kp["rows"]] or ["- 미정"]) + [f"- 점검 주기: {v(kp['cycle'])}"]
     L += ["", "## 금지·주의 (선택)", f"- 금지어: {', '.join(ru['banned']) or '미정'}", f"- 법적·심의 주의사항: {v(ru['legal'])}", f"- 경쟁사 언급 규칙: {v(ru['competitor_rule'])}", ""]
     return "\n".join(L)
 
@@ -1212,6 +1246,11 @@ def save_playbook(client, fields):
     md = p.with_suffix(".md")
     if not md.exists():
         md.write_text(_pb_md(client, n, d, d["saved_at"]), encoding="utf-8")
+    # 다른 화면이 읽기 쉽게, 운영 채널의 '현재 값'을 따로 둔다(버전 기록은 playbook-v{N}.json 에 남는다)
+    f = common.client_dir(client) / "channels.json"
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"channels": d["channels"], "playbook_version": n, "updated_at": d["saved_at"]}, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(f)
     return n
 
 
@@ -1385,6 +1424,9 @@ class Handler(BaseHTTPRequestHandler):
             return launch_buddy()
         if path == "/api/new-account" and method == "POST":
             return new_account(b.get("id"), b.get("name"), b.get("char"), b.get("desktop"))
+        if path == "/api/channels":
+            c = need_active()
+            return {"channels": common.channels_current(c), "catalog": [{"id": k, "label": v} for k, v in OP_CHANNELS.items()], "roles": list(CH_ROLES)}
         if path == "/api/playbook":
             c = need_active()
             if method == "POST":

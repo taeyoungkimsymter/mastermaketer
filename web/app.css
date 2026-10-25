@@ -777,3 +777,12 @@ button.wk-i:hover{border-color:var(--accent)}
 .wk-day{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
 .pcc{border:0;cursor:pointer}
 .pcc:hover{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- 운영 채널 카드 ---------- */
+.chpick{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:12px}
+.chcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.chcard{border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2)}
+.chcard .field .in{background:var(--surface)}
+.chh{display:flex;align-items:center;gap:10px}
+.chh b{font-size:15px}
+.chcard textarea.in{min-height:56px}
