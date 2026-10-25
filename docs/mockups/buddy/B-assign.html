@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>어카운트별 캐릭터 지정</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&amp;family=Press+Start+2P&amp;display=swap">
+<style>
+body{margin:0}
+button{font-family:inherit;cursor:pointer}
+.pxo{clip-path:polygon(8px 0,calc(100% - 8px) 0,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),0 calc(100% - 8px),0 8px,4px 8px,4px 4px,8px 4px)}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 48px 64px; background: #EFE6D2; color: #2B2140; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-family: 'Press Start 2P', monospace; font-size: 11px; color: #4C46B8">CHARACTER SELECT</span>
+    <h1 style="margin: 0; font-size: 30px; font-weight: 900">어카운트마다 담당 캐릭터를 골라 주세요</h1>
+    <p style="margin: 0; font-size: 15px; color: #6B5A48">왼쪽에서 어카운트를 고르고, 오른쪽 캐릭터를 누르면 바로 바뀌어요. 말투도 캐릭터를 따라가요.</p>
+  </div>
+
+  <div style="display: flex; gap: 28px; flex-grow: 1; min-height: 0">
+    <div style="flex: 0 0 380px; display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 13px; font-weight: 900; color: #6B5A48">어카운트</span>
+      <sc-for list="{{accounts}}" as="a" hint-placeholder-count="2">
+        <sc-if value="{{a.selected}}" hint-placeholder-val="{{ false }}">
+          <div class="pxo" style="background: #4A3020; padding: 4px">
+            <button onClick="{{a.pick}}" class="pxo" style="width: 100%; border: 0; background: #FFD9E6; padding: 12px 14px; display: flex; align-items: center; gap: 12px; text-align: left; color: #2B2140">
+              <span style="width: 34px; height: 34px; background: {{a.mono}}; color: #FFFFFF; font-family: 'Press Start 2P', monospace; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0">{{a.initial}}</span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 900">{{a.name}}</span><span style="font-size: 12px; color: #6B5A48">{{a.charName}} · {{a.concept}}</span></span>
+              <span class="pxo" style="width: 56px; height: 56px; background: #FFF6DE; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; flex-shrink: 0">
+                <dc-import name="Buddy" char="{{a.char}}" state="idle" portrait="{{ true }}" size="56" hint-size="56px,50px"></dc-import>
+              </span>
+            </button>
+          </div>
+        </sc-if>
+        <sc-if value="{{a.unselected}}" hint-placeholder-val="{{ true }}">
+          <div class="pxo" style="background: #B89D78; padding: 4px">
+            <button onClick="{{a.pick}}" class="pxo" style="width: 100%; border: 0; background: #FFF6DE; padding: 12px 14px; display: flex; align-items: center; gap: 12px; text-align: left; color: #2B2140">
+              <span style="width: 34px; height: 34px; background: {{a.mono}}; color: #FFFFFF; font-family: 'Press Start 2P', monospace; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0">{{a.initial}}</span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 900">{{a.name}}</span><span style="font-size: 12px; color: #6B5A48">{{a.charName}} · {{a.concept}}</span></span>
+              <span class="pxo" style="width: 56px; height: 56px; background: #EFE6D2; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; flex-shrink: 0">
+                <dc-import name="Buddy" char="{{a.char}}" state="idle" portrait="{{ true }}" size="56" hint-size="56px,50px"></dc-import>
+              </span>
+            </button>
+          </div>
+        </sc-if>
+      </sc-for>
+      <div class="pxo" style="background: #B89D78; padding: 3px">
+        <div class="pxo" style="background: #EFE6D2; height: 56px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #6B5A48">+ 새 어카운트가 생기면 여기서 지정</div>
+      </div>
+
+      <span style="font-size: 13px; font-weight: 900; color: #6B5A48; margin-top: 12px">미리보기</span>
+      <div style="filter: drop-shadow(4px 4px 0 rgba(74,48,32,.3))">
+        <div class="pxo" style="background: #2B2140; padding: 4px">
+          <div class="pxo" style="background: #FFFFFF; padding: 12px; display: flex; gap: 12px; align-items: center">
+            <div class="pxo" style="width: 64px; height: 64px; background: #FFE3EC; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; flex-shrink: 0">
+              <dc-import name="Buddy" char="{{cur.char}}" state="alert" portrait="{{ true }}" size="64" hint-size="64px,57px"></dc-import>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 12px; font-weight: 900; color: #C2306A">{{cur.charName}}</span>
+              <span style="font-size: 14px; font-weight: 700; line-height: 1.5">{{cur.line}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+      <span style="font-size: 13px; font-weight: 900; color: #6B5A48">캐릭터 · {{cur.name}}에 배정할 캐릭터를 골라요</span>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+        <sc-for list="{{roster}}" as="r" hint-placeholder-count="6">
+          <div class="pxo" style="background: {{r.frame}}; padding: 4px">
+            <button onClick="{{r.pick}}" aria-pressed="{{r.on}}" class="pxo" style="width: 100%; border: 0; background: {{r.bg}}; padding: 10px 12px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #2B2140">
+              <div style="height: 150px; display: flex; align-items: flex-end; justify-content: center">
+                <dc-import name="Buddy" char="{{r.id}}" state="idle" size="140" hint-size="152px,160px"></dc-import>
+              </div>
+              <span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 17px; font-weight: 900">{{r.name}}</span><span class="pxo" style="padding: 2px 8px; background: {{r.tag}}; font-size: 11px; font-weight: 900; color: #2B2140">{{r.concept}}</span></span>
+              <span style="font-size: 12px; color: #6B5A48; text-align: center; line-height: 1.5">{{r.desc}}</span>
+              <span style="font-size: 11px; font-weight: 900; color: #4C46B8; min-height: 16px">{{r.badge}}</span>
+            </button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'cj', map: { cj: 'momo', kolon: 'leo' } };
+  }
+  renderVals() {
+    var self = this;
+    var R = [
+      { id: 'leo', name: '레오', concept: '카리스마', tag: '#C9D2FF', desc: '슬릭백에 수트. 짧고 굵게 보고하는 리더형', line: '대표님, 컨펌 한 건 대기 중입니다. 지금 보시죠.' },
+      { id: 'luna', name: '루나', concept: '멋쟁이', tag: '#F2D9A8', desc: '선글라스에 트렌치코트. 감각 좋은 트렌드세터', line: '카피 v2 나왔어요. 꽤 괜찮을걸요? 한 번 봐줘요~' },
+      { id: 'momo', name: '모모', concept: '귀여운', tag: '#FFC2D6', desc: '리본 단발에 노란 후드. 팀의 비타민', line: '대표님~! 카피가 기다리고 있어요. 봐주세요 ♡' },
+      { id: 'doyun', name: '도윤', concept: '열정', tag: '#FFC9BF', desc: '삐죽머리에 빨간 맨투맨. 데드라인 앞에서 불타는 타입', line: '대표님!! 데드라인 하루 남았어요! 같이 달려요!' },
+      { id: 'haru', name: '하루', concept: '차분', tag: '#C6EDE3', desc: '올림머리에 안경, 민트 니트. 꼼꼼한 정리왕', line: '확인이 필요한 건이 하나 있어요. 시간 될 때 봐주세요.' },
+      { id: 'jun', name: '준', concept: '힙', tag: '#E6E3FF', desc: '캡에 오버핏 후드. 트렌드에 제일 빠른 막내', line: '대표님, 새 리퀘스트 들어왔어요. 체크 한 번 가실까요?' }
+    ];
+    var byId = {}; R.forEach(function (r) { byId[r.id] = r; });
+    var A = [
+      { key: 'cj', name: 'CJ', initial: 'C', mono: '#4C46B8' },
+      { key: 'kolon', name: '코오롱', initial: 'K', mono: '#8C7A2E' }
+    ];
+    var map = this.state.map, sel = this.state.sel;
+    var accounts = A.map(function (a) {
+      var ch = byId[map[a.key]];
+      return { name: a.name, initial: a.initial, mono: a.mono, char: ch.id, charName: ch.name, concept: ch.concept, selected: a.key === sel, unselected: a.key !== sel, pick: function () { self.setState({ sel: a.key }); } };
+    });
+    var curA = A.filter(function (a) { return a.key === sel; })[0];
+    var curC = byId[map[sel]];
+    var roster = R.map(function (r) {
+      var on = map[sel] === r.id;
+      var usedBy = A.filter(function (a) { return map[a.key] === r.id && a.key !== sel; }).map(function (a) { return a.name; });
+      return {
+        id: r.id, name: r.name, concept: r.concept, tag: r.tag, desc: r.desc, on: on ? 'true' : 'false',
+        frame: on ? '#4C46B8' : '#B89D78', bg: on ? '#FFF6DE' : '#F7F0E1',
+        badge: on ? '▶ ' + curA.name + ' 담당' : (usedBy.length ? usedBy.join(', ') + ' 담당 중' : ''),
+        pick: function () { var m = Object.assign({}, self.state.map); m[sel] = r.id; self.setState({ map: m }); }
+      };
+    });
+    return { accounts: accounts, roster: roster, cur: { name: curA.name, char: curC.id, charName: curC.name, line: curC.line } };
+  }
+}
+</script>
+</body>
+</html>

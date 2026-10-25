@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>말풍선 3종</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&amp;family=Press+Start+2P&amp;display=swap">
+<style>
+body{margin:0}
+.pxo{clip-path:polygon(8px 0,calc(100% - 8px) 0,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),0 calc(100% - 8px),0 8px,4px 8px,4px 4px,8px 4px)}
+.pxr{clip-path:polygon(12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 8px) 4px,calc(100% - 8px) 8px,calc(100% - 4px) 8px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),8px calc(100% - 4px),8px calc(100% - 8px),4px calc(100% - 8px),4px calc(100% - 12px),0 calc(100% - 12px),0 12px,4px 12px,4px 8px,8px 8px,8px 4px,12px 4px)}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 44px 64px; background: #EFE6D2; color: #2B2140; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-family: 'Press Start 2P', monospace; font-size: 11px; color: #5B55E0">SPEECH BUBBLES</span>
+    <h1 style="margin: 0; font-size: 30px; font-weight: 900">캐릭터 머리 위로 말풍선이 톡! 색깔로 급한 정도를 알려요</h1>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+    <sc-for list="{{kinds}}" as="k" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0">
+        <div style="width: 100%; filter: drop-shadow(5px 5px 0 rgba(43,33,64,.2))">
+          <div class="pxr" style="background: #2B2140; padding: 4px">
+            <div class="pxr" style="background: {{k.bg}}; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 7px">
+              <div style="display: flex; align-items: center; gap: 6px">
+                <svg width="14" height="12" viewBox="0 0 7 6" shape-rendering="crispEdges" aria-hidden="true">
+                  <sc-for list="{{k.icon}}" as="p" hint-placeholder-count="20"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for>
+                </svg>
+                <span style="font-size: 12px; font-weight: 900; color: {{k.color}}">{{k.charName}} · {{k.label}}</span>
+                <span style="flex-grow: 1"></span>
+                <span style="font-family: 'Press Start 2P', monospace; font-size: 8px; color: #5B55E0">{{k.code}}</span>
+              </div>
+              <span style="font-size: 16px; font-weight: 900; line-height: 1.5">{{k.msg}}</span>
+              <div style="display: flex; gap: 6px">
+                <span class="pxo" style="flex: 1; height: 32px; background: {{k.btn}}; color: #2B2140; font-size: 12px; font-weight: 900; display: flex; align-items: center; justify-content: center">{{k.go}}</span>
+                <span class="pxo" style="flex: 1; height: 32px; background: #FFFFFF; color: #5A5070; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">이따가</span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; margin-top: -4px">
+            <div style="width: 28px; height: 6px; background: {{k.bg}}; border-left: 4px solid #2B2140; border-right: 4px solid #2B2140"></div>
+            <div style="width: 20px; height: 6px; background: {{k.bg}}; border-left: 4px solid #2B2140; border-right: 4px solid #2B2140"></div>
+            <div style="width: 12px; height: 6px; background: {{k.bg}}; border-left: 4px solid #2B2140; border-right: 4px solid #2B2140"></div>
+            <div style="width: 12px; height: 4px; background: #2B2140"></div>
+          </div>
+        </div>
+        <dc-import name="Buddy" char="{{k.char}}" state="{{k.state}}" size="150" hint-size="152px,158px"></dc-import>
+        <div style="align-self: stretch; display: flex; flex-direction: column; gap: 4px; padding: 6px 4px 0">
+          <span style="font-size: 13px; font-weight: 900; color: {{k.color}}">{{k.kind}} · 언제 뜨나요</span>
+          <sc-for list="{{k.triggers}}" as="tr" hint-placeholder-count="3">
+            <span style="font-size: 13px">· {{tr}}</span>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+    <sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+      <div class="pxo" style="background: #4A3020; padding: 4px">
+        <div class="pxo" style="background: #FFF6DE; padding: 12px 16px; display: flex; flex-direction: column; gap: 5px; height: 100%; box-sizing: border-box">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 8px; color: #5B55E0">{{r.en}}</span>
+          <span style="font-size: 15px; font-weight: 900">{{r.title}}</span>
+          <span style="font-size: 13px; line-height: 1.5; color: #4A3D35">{{r.text}}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  sprite(rows, pal) {
+    var out = [];
+    rows.forEach(function (r, y) { for (var x = 0; x < r.length; x++) { var c = r.charAt(x); if (c !== '.') out.push({ x: x, y: y, c: pal[c] }); } });
+    return out;
+  }
+  renderVals() {
+    var heart = this.sprite(['.rr.rr.', 'rpprppr', 'rpwpppr', '.rpppr.', '..rpr..', '...r...'], { r: '#C2306A', p: '#FF7FA8', w: '#FFFFFF' });
+    var star = this.sprite(['...y...', '..yYy..', 'yyyYyyy', '.yyYyy.', '.yy.yy.', 'y.....y'], { y: '#E8A317', Y: '#FFE08A' });
+    var bang = this.sprite(['.rrrrr.', 'rrrwrrr', 'rrrwrrr', 'rrrwrrr', 'rrrrrrr', '.rrwrr.'], { r: '#E0453A', w: '#FFFFFF' });
+    return {
+      kinds: [
+        { kind: '확인 필요', label: '컨펌 부탁해요', color: '#D63A72', bg: '#FFF1F6', btn: '#FFD1E0', icon: heart, char: 'momo', charName: '모모', state: 'alert', code: 'CJ·CW', go: '볼게요!',
+          msg: '대표님~! 상세페이지 카피 v2 봐주세요 ♡',
+          triggers: ['팀이 컨펌을 요청했을 때', '컨셉 3안이 올라왔을 때', '클라이언트 리퀘스트가 새로 들어왔을 때'] },
+        { kind: '체크 필요', label: '체크해 주세요', color: '#9A5B00', bg: '#FFF8DE', btn: '#FFE48F', icon: star, char: 'haru', charName: '하루', state: 'alert', code: 'CJ·AE', go: '확인할게요',
+          msg: '내일 올릴 블로그 리뷰, 클라이언트 컨펌이 아직이에요.',
+          triggers: ['데드라인 하루 전인데 진행 중일 때', '포스팅 전날 클라이언트 컨펌이 없을 때', '컨펌 대기가 이틀 넘었을 때'] },
+        { kind: '긴급', label: '급해요!', color: '#C2321F', bg: '#FFEDEA', btn: '#FFC2B8', icon: bang, char: 'doyun', charName: '도윤', state: 'urgent', code: 'CJ·MP', go: '지금 볼게요',
+          msg: '대표님!! 검색광고 CPC가 확 뛰었어요! 지금 봐주세요!',
+          triggers: ['데드라인이 지난 리퀘스트·포스팅', '성과 지표가 평소보다 크게 튈 때', '소재 리젝·매체 정책 이슈'] }
+      ],
+      rules: [
+        { en: 'POP', title: '톡 튀어나와요', text: '말풍선이 통통 튀며 나타나고 캐릭터가 깡총 뛰어서, 다른 일을 하고 있어도 눈에 띄어요.' },
+        { en: 'GROUPING', title: '한 번에 하나씩', text: '알림이 여러 개면 가장 급한 것 하나만 말하고, 말풍선 모서리에 "+2"처럼 남은 개수를 붙여요.' },
+        { en: 'QUIET', title: '방해 금지', text: '미팅 중이나 퇴근 후에는 모두 쉬는 중으로 바뀌고, 긴급만 작은 배지로 남아요.' },
+        { en: 'CLICK', title: '캐릭터를 누르면', text: '그 어카운트 팀의 역할별 현황(AE~MP)이 열리고, Overview로 바로 갈 수 있어요.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

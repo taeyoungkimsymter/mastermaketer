@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>구성안 탭과 용어</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Inter:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3533A8}a:hover{color:#26248A}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1000px; box-sizing: border-box; padding: 52px 64px; background: #F4F5F9; color: #15172B; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 24px">
+    <div style="flex: 1 1 520px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .08em; color: #3533A8">STRUCTURE</span>
+      <h1 style="margin: 0; font-size: 30px; font-weight: 700">All Accounts → 어카운트 팀</h1>
+      <p style="margin: 0; font-size: 15px; color: #5B5F73">메인에서 어카운트를 열면 그 어카운트를 맡은 팀의 Overview와 팀 탭 6개가 나타납니다.</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600">
+      <span style="height: 36px; padding: 0 14px; border-radius: 10px; background: #1B1A4B; color: #FFFFFF; display: inline-flex; align-items: center">All Accounts</span>
+      <span style="color: #5B5F73">→</span>
+      <span style="height: 36px; padding: 0 14px; border-radius: 10px; background: #3533A8; color: #FFFFFF; display: inline-flex; align-items: center">Overview</span>
+      <span style="color: #5B5F73">→</span>
+      <span style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #C9C8EE; background: #FFFFFF; color: #3533A8; display: inline-flex; align-items: center">Team Tabs ×6</span>
+    </div>
+  </div>
+
+  <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+    <div style="display: grid; grid-template-columns: 170px 70px 220px 1fr; gap: 20px; padding: 13px 24px; background: #F1F2F7; font-size: 12px; font-weight: 700; color: #5B5F73">
+      <span>탭</span><span>코드</span><span>롤</span><span>탭 안 메뉴</span>
+    </div>
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+      <div style="display: grid; grid-template-columns: 170px 70px 220px 1fr; gap: 20px; align-items: center; padding: 12px 24px; border-top: 1px solid #E2E3EC">
+        <span style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 700">{{r.tab}}</span>
+        <span><span style="height: 24px; padding: 0 8px; border-radius: 6px; background: #ECEBFA; color: #3533A8; font-family: Inter, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .04em; display: inline-flex; align-items: center">{{r.code}}</span></span>
+        <span style="font-size: 13px; color: #3A3D52">{{r.role}}</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{r.chips}}" as="c" hint-placeholder-count="3">
+            <span style="height: 26px; padding: 0 11px; border-radius: 13px; border: 1px solid #E2E3EC; background: #FFFFFF; color: #15172B; font-family: Inter, 'Noto Sans KR', sans-serif; font-size: 12px; display: inline-flex; align-items: center">{{c}}</span>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <h2 style="margin: 0; font-family: Inter, sans-serif; font-size: 16px; font-weight: 700">Glossary · 바뀐 표현</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+      <sc-for list="{{terms}}" as="w" hint-placeholder-count="8">
+        <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; font-size: 13px">
+          <span style="color: #5B5F73; text-decoration: line-through">{{w.from}}</span>
+          <span style="color: #5B5F73">→</span>
+          <span style="font-weight: 700; color: #3533A8">{{w.to}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      rows: [
+        { tab: 'Overview', code: 'CEO', role: '대표 · 컨펌', chips: ['KPI 4', 'Team Status', 'This Week', '컨펌 패널'] },
+        { tab: 'Account', code: 'AE', role: 'Account Executive', chips: ['Brief', 'Content Calendar', 'Client Request', 'Issue Log', 'Meeting Note', 'Monthly Report'] },
+        { tab: 'Strategy', code: 'AP', role: 'Account Planner', chips: ['Reference Board', 'Competitor Watch', 'Keyword Insight', 'Concept'] },
+        { tab: 'Copy', code: 'CW', role: 'Copywriter', chips: ['Copy Options', 'Detail Page', 'Script'] },
+        { tab: 'Art', code: 'AD', role: 'Art Director', chips: ['Key Visual', 'Ad Creative', 'Resizing', 'Brand Guide'] },
+        { tab: 'Film', code: 'PD', role: 'Producer', chips: ['Storyboard', 'Shooting Plan', 'On-set', 'Post-production'] },
+        { tab: 'Performance', code: 'MP', role: 'Media & Performance', chips: ['Media Report', 'Search Keyword', 'Content Performance', 'Performance Report'] }
+      ],
+      terms: [
+        { from: '고객사', to: 'Account' },
+        { from: '광고주', to: '클라이언트' },
+        { from: '홈', to: 'Overview' },
+        { from: '승인', to: '컨펌' },
+        { from: '지연', to: '딜레이' },
+        { from: '업로드·게시', to: '포스팅' },
+        { from: '광고주 요청', to: 'Client Request' },
+        { from: '운영 이슈', to: 'Issue Log' },
+        { from: '반려', to: '리젝' },
+        { from: '디자인 시안', to: 'Key Visual · 시안' },
+        { from: '촬영', to: '슈팅' },
+        { from: '광고비', to: '집행 금액' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>All Accounts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Inter:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3533A8}a:hover{color:#26248A}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 1200px; display: flex; flex-wrap: wrap; background: {{t.bg}}; color: {{t.text}}; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px">
+
+  <nav aria-label="주 메뉴" style="flex: 0 0 68px; background: {{t.rail}}; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 0">
+    <div style="width: 36px; height: 36px; border-radius: 10px; background: #4B48D0; display: flex; align-items: center; justify-content: center; margin-bottom: 8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="7"></circle></svg>
+    </div>
+    <button aria-label="Accounts" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: #2F2E72; color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+    </button>
+    <button aria-label="Calendar" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #B9B8E8; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+    </button>
+    <button aria-label="Team" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #B9B8E8; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"></path><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.4 3.5 5.2"></path></svg>
+    </button>
+    <button aria-label="Reports" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #B9B8E8; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg>
+    </button>
+    <div style="flex-grow: 1"></div>
+    <button aria-label="{{themeLabel}}" onClick="{{toggleDark}}" style="width: 44px; height: 44px; border-radius: 10px; border: 0; background: #2C2B63; color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+      <sc-if value="{{dark}}" hint-placeholder-val="{{ false }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      </sc-if>
+      <sc-if value="{{light}}" hint-placeholder-val="{{ true }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+      </sc-if>
+    </button>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 32px 48px 56px; display: flex; flex-direction: column; gap: 22px; box-sizing: border-box">
+
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px">
+      <div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .08em; color: {{t.accent}}">MASTER MARKETER</span>
+        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px">
+          <h1 style="margin: 0; font-family: Inter, 'Noto Sans KR', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -.01em">All Accounts</h1>
+          <span style="font-size: 13px; color: {{t.muted}}">운영 중인 어카운트와 팀 현황을 한눈에 봅니다.</span>
+          <span style="height: 22px; padding: 0 8px; border-radius: 6px; border: 1px dashed {{t.border}}; color: {{t.muted}}; font-size: 11px; display: inline-flex; align-items: center">예시 데이터</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <label for="acc-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">어카운트 검색</label>
+        <input id="acc-search" type="search" placeholder="어카운트 검색" style="width: 220px; height: 40px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; padding: 0 14px; font-size: 13px">
+        <button onClick="{{toggleDark}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font-size: 13px">{{themeLabel}}</button>
+        <button style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: {{t.btn}}; color: #FFFFFF; font-size: 13px; font-weight: 500">+ New Account</button>
+      </div>
+    </header>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px">
+      <sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+        <div style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-family: Inter, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .06em; color: {{t.muted}}">{{k.en}}</span>
+          <span style="font-size: 13px; color: {{t.muted}}">{{k.ko}}</span>
+          <span style="font-family: Inter, 'Noto Sans KR', sans-serif; font-size: 28px; font-weight: 700; color: {{k.color}}">{{k.value}}</span>
+          <span style="font-size: 12px; color: {{t.muted}}">{{k.sub}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <h2 style="margin: 0 8px 0 0; font-family: Inter, sans-serif; font-size: 16px; font-weight: 700">Accounts</h2>
+      <span style="height: 32px; padding: 0 12px; border-radius: 16px; background: {{t.text}}; color: {{t.bg}}; font-size: 12px; display: inline-flex; align-items: center">All 2</span>
+      <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid {{t.border}}; background: {{t.surface}}; font-size: 12px; display: inline-flex; align-items: center">On Track 0</span>
+      <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid {{t.border}}; background: {{t.surface}}; font-size: 12px; display: inline-flex; align-items: center">At Risk 1</span>
+      <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid {{t.border}}; background: {{t.surface}}; font-size: 12px; display: inline-flex; align-items: center">Onboarding 1</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px">
+      <sc-for list="{{accounts}}" as="a" hint-placeholder-count="2">
+        <a href="Main.dc.html" style="text-decoration: none; color: {{t.text}}; background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; align-items: center; gap: 14px">
+            <span style="width: 44px; height: 44px; border-radius: 12px; background: {{a.mono}}; color: #FFFFFF; font-family: Inter, sans-serif; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{a.initial}}</span>
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px">
+              <span style="font-size: 17px; font-weight: 700">{{a.name}}</span>
+              <span style="font-size: 12px; color: {{t.muted}}">{{a.meta}}</span>
+            </div>
+            <span style="height: 26px; padding: 0 10px; border-radius: 13px; background: {{a.stSoft}}; color: {{a.stColor}}; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px"><span style="width: 6px; height: 6px; border-radius: 3px; background: {{a.stColor}}"></span>{{a.status}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: {{t.muted}}"><span>Phase · <b style="color: {{t.text}}; font-weight: 500">{{a.phase}}</b></span><span>{{a.phaseNo}}</span></div>
+            <div style="height: 6px; border-radius: 3px; background: {{t.surface2}}; overflow: hidden"><div style="width: {{a.pct}}; height: 6px; background: {{t.btn}}"></div></div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+            <sc-for list="{{a.metrics}}" as="m" hint-placeholder-count="3">
+              <div style="border-radius: 10px; background: {{t.surface2}}; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px">
+                <span style="font-size: 11px; color: {{t.muted}}">{{m.label}}</span>
+                <span style="font-family: Inter, 'Noto Sans KR', sans-serif; font-size: 18px; font-weight: 700">{{m.value}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+            <span style="font-size: 12px; color: {{t.muted}}; margin-right: 4px">Team</span>
+            <sc-for list="{{a.team}}" as="r" hint-placeholder-count="6">
+              <sc-if value="{{r.on}}" hint-placeholder-val="{{ true }}">
+                <span style="height: 24px; padding: 0 8px; border-radius: 6px; background: {{t.accentSoft}}; color: {{t.accent}}; font-family: Inter, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .04em; display: inline-flex; align-items: center">{{r.code}}</span>
+              </sc-if>
+              <sc-if value="{{r.off}}" hint-placeholder-val="{{ false }}">
+                <span style="height: 24px; padding: 0 8px; border-radius: 6px; border: 1px dashed {{t.border}}; color: {{t.muted}}; font-family: Inter, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .04em; display: inline-flex; align-items: center">{{r.code}}</span>
+              </sc-if>
+            </sc-for>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; border-top: 1px solid {{t.border}}; padding-top: 14px; font-size: 13px">
+            <span style="color: {{t.muted}}">Next</span>
+            <span style="flex-grow: 1">{{a.next}}</span>
+            <span style="color: {{t.accent}}; font-weight: 500">Open ›</span>
+          </div>
+        </a>
+      </sc-for>
+      <button style="border: 1px dashed {{t.border}}; border-radius: 16px; background: transparent; color: {{t.muted}}; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 14px">
+        <span style="font-size: 26px; line-height: 1">+</span>
+        <span>New Account</span>
+        <span style="font-size: 12px">브리프와 팀 구성을 함께 설정합니다</span>
+      </button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+      <section style="flex: 3 1 520px; min-width: 0; background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <h2 style="margin: 0; font-family: Inter, sans-serif; font-size: 16px; font-weight: 700">This Week</h2>
+          <span style="font-size: 12px; color: {{t.muted}}">10.26 – 11.01 · 전 어카운트 일정</span>
+        </div>
+        <sc-for list="{{agenda}}" as="g" hint-placeholder-count="5">
+          <div style="display: grid; grid-template-columns: 76px 48px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid {{t.border}}; font-size: 13px">
+            <span style="color: {{t.muted}}">{{g.day}}</span>
+            <span style="height: 22px; border-radius: 6px; background: {{t.accentSoft}}; color: {{t.accent}}; font-family: Inter, sans-serif; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">{{g.code}}</span>
+            <span>{{g.text}}</span>
+            <span style="font-size: 12px; color: {{t.muted}}">{{g.acc}}</span>
+          </div>
+        </sc-for>
+      </section>
+      <section style="flex: 2 1 360px; min-width: 0; background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <h2 style="margin: 0; font-family: Inter, sans-serif; font-size: 16px; font-weight: 700">Team Workload</h2>
+          <span style="font-size: 12px; color: {{t.muted}}">역할별 진행 중인 작업</span>
+        </div>
+        <sc-for list="{{load}}" as="l" hint-placeholder-count="6">
+          <div style="display: grid; grid-template-columns: 44px 1fr 28px; gap: 12px; align-items: center">
+            <span style="font-family: Inter, sans-serif; font-size: 12px; font-weight: 700; color: {{t.accent}}">{{l.code}}</span>
+            <div style="height: 8px; border-radius: 4px; background: {{t.surface2}}; overflow: hidden"><div style="width: {{l.pct}}; height: 8px; background: {{t.btn}}"></div></div>
+            <span style="font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; text-align: right">{{l.n}}</span>
+          </div>
+        </sc-for>
+        <span style="font-size: 12px; color: {{t.muted}}">한 역할에 일이 몰리면 막대가 길어져요. 담당 배정은 각 어카운트의 ⋯ 메뉴에서 합니다.</span>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkMode":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { dark: null };
+  }
+  renderVals() {
+    var self = this;
+    var dark = this.state.dark === null ? !!(this.props.darkMode) : this.state.dark;
+    var L = { bg: '#F4F5F9', surface: '#FFFFFF', surface2: '#F1F2F7', border: '#E2E3EC', text: '#15172B', muted: '#5B5F73', accent: '#3533A8', accentSoft: '#ECEBFA', btn: '#3533A8', rail: '#1B1A4B', ok: '#13784F', okSoft: '#E3F4EC', warn: '#8A5300', warnSoft: '#FDF1DC', late: '#B42318', lateSoft: '#FDE8E6', info: '#2D2B8F', infoSoft: '#ECEBFA' };
+    var D = { bg: '#0E0F1C', surface: '#171829', surface2: '#1F2136', border: '#2B2D45', text: '#ECEDF5', muted: '#A3A6BC', accent: '#A9A6FF', accentSoft: '#25244D', btn: '#4B48D0', rail: '#0A0A18', ok: '#5FD3A2', okSoft: '#16332A', warn: '#F2B45A', warnSoft: '#3A2C14', late: '#FF8A80', lateSoft: '#3B1D1F', info: '#C9C7FF', infoSoft: '#25244D' };
+    var t = dark ? D : L;
+    var codes = ['AE', 'AP', 'CW', 'AD', 'PD', 'MP'];
+    var team = function (onList) { return codes.map(function (c) { var on = onList.indexOf(c) >= 0; return { code: c, on: on, off: !on }; }); };
+    var accounts = [
+      { name: 'CJ', initial: 'C', mono: '#4B48D0', meta: '공개자료 기반 데모 · Retainer', status: 'At Risk', s: 'warn', phase: 'Concept', phaseNo: '2 / 6', pct: '33%', metrics: [['컨펌 대기', '5'], ['딜레이', '2'], ['이번 주 포스팅', '1/5']], team: team(codes), next: '10.29 브랜드 필름 슈팅' },
+      { name: '코오롱', initial: 'K', mono: '#8C7A2E', meta: '공개자료 기반 데모 · Project', status: 'Onboarding', s: 'info', phase: 'Brief', phaseNo: '1 / 6', pct: '17%', metrics: [['컨펌 대기', '0'], ['딜레이', '0'], ['이번 주 포스팅', '—']], team: team(['AE', 'AP', 'CW']), next: '[킥오프 미팅 일정]' }
+    ].map(function (a) { return Object.assign({}, a, { stColor: t[a.s], stSoft: t[a.s + 'Soft'], metrics: a.metrics.map(function (m) { return { label: m[0], value: m[1] }; }) }); });
+    var kpis = [
+      { en: 'ACTIVE ACCOUNTS', ko: '운영 어카운트', value: '2', sub: 'Retainer 1 · Project 1', color: t.text },
+      { en: 'PENDING CONFIRM', ko: '컨펌 대기', value: '5', sub: 'CJ 5', color: t.accent },
+      { en: 'OVERDUE', ko: '딜레이', value: '2', sub: '클라이언트 리퀘스트 1 · 포스팅 1', color: t.late },
+      { en: 'POSTING', ko: '이번 주 포스팅', value: '1 / 5', sub: '업로드 완료 / 예정', color: t.text },
+      { en: 'AD SPEND', ko: '이번 달 집행 금액', value: '—', sub: '매체 연동 후 표시', color: t.text }
+    ];
+    var agenda = [
+      { day: '월 10.26', code: 'AE', text: '정기 클라이언트 미팅', acc: 'CJ' },
+      { day: '화 10.27', code: 'CW', text: '상세페이지 카피 마감', acc: 'CJ' },
+      { day: '수 10.28', code: 'AE', text: '블로그 리뷰 포스팅', acc: 'CJ' },
+      { day: '목 10.29', code: 'PD', text: '브랜드 필름 슈팅', acc: 'CJ' },
+      { day: '금 10.30', code: 'MP', text: '주간 퍼포먼스 리포트', acc: 'CJ' }
+    ];
+    var load = [['AE', 7], ['AP', 2], ['CW', 4], ['AD', 4], ['PD', 2], ['MP', 1]].map(function (x) { return { code: x[0], n: x[1], pct: Math.round(x[1] / 8 * 100) + '%' }; });
+    return {
+      t: t, dark: dark, light: !dark,
+      themeLabel: dark ? '라이트 모드' : '다크 모드',
+      toggleDark: function () { self.setState({ dark: !dark }); },
+      accounts: accounts, kpis: kpis, agenda: agenda, load: load
+    };
+  }
+}
+</script>
+</body>
+</html>

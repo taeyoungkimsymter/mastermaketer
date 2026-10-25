@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>바탕화면 버디 예시</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&amp;family=Press+Start+2P&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3533A8}a:hover{color:#26248A}
+button{font-family:inherit;cursor:pointer}
+.pxo{clip-path:polygon(8px 0,calc(100% - 8px) 0,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),0 calc(100% - 8px),0 8px,4px 8px,4px 4px,8px 4px)}
+.pxr{clip-path:polygon(12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 8px) 4px,calc(100% - 8px) 8px,calc(100% - 4px) 8px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),8px calc(100% - 4px),8px calc(100% - 8px),4px calc(100% - 8px),4px calc(100% - 12px),0 calc(100% - 12px),0 12px,4px 12px,4px 8px,8px 8px,8px 4px,12px 4px)}
+@keyframes popIn{0%{transform:scale(.6)}40%{transform:scale(1.08)}70%{transform:scale(.97)}100%{transform:scale(1)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes twinkle{0%,100%{opacity:1}50%{opacity:.2}}
+.pop{animation:popIn .5s steps(4,end) both, floaty 2s steps(2,end) .5s infinite;transform-origin:30% 100%}
+.twinkle{animation:twinkle 1.4s steps(2,end) infinite}
+.twinkle2{animation:twinkle 1.4s steps(2,end) .7s infinite}
+@media (prefers-reduced-motion: reduce){.pop,.twinkle,.twinkle2{animation:none}}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; position: relative; overflow: hidden; background: #DCDDF1; font-family: 'Noto Sans KR', system-ui, sans-serif; color: #2B2140">
+  <div style="position: absolute; left: -160px; top: -200px; width: 720px; height: 720px; border-radius: 360px; background: #E7E4F6"></div>
+  <div style="position: absolute; right: -220px; top: 260px; width: 820px; height: 820px; border-radius: 410px; background: #CFD0EC"></div>
+
+  <div style="position: absolute; left: 96px; top: 80px; width: 640px; height: 440px; border-radius: 14px; background: #FFFFFF; opacity: .78; border: 1px solid #C9CAE6; display: flex; flex-direction: column; overflow: hidden">
+    <div style="height: 36px; background: #F1F2F7; display: flex; align-items: center; gap: 8px; padding: 0 14px">
+      <span style="width: 10px; height: 10px; border-radius: 5px; background: #D0D1DE"></span><span style="width: 10px; height: 10px; border-radius: 5px; background: #D0D1DE"></span><span style="width: 10px; height: 10px; border-radius: 5px; background: #D0D1DE"></span>
+      <span style="font-size: 12px; color: #5B5F73; margin-left: 12px">작업 중인 다른 창</span>
+    </div>
+    <div style="flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 14px">
+      <div style="width: 40%; height: 14px; border-radius: 7px; background: #E2E3EC"></div>
+      <div style="width: 85%; height: 10px; border-radius: 5px; background: #ECEDF3"></div>
+      <div style="width: 78%; height: 10px; border-radius: 5px; background: #ECEDF3"></div>
+    </div>
+  </div>
+
+  <sc-if value="{{panelOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 140px; bottom: 150px; width: 340px; filter: drop-shadow(5px 5px 0 rgba(43,33,64,.25))">
+      <section aria-label="CJ 팀 현황" class="pxo" style="background: #2B2140; padding: 4px">
+        <div class="pxo" style="background: #FFFFFF; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <div class="pxo" style="width: 52px; height: 52px; background: #FFE3EC; display: flex; align-items: flex-end; justify-content: center; overflow: hidden">
+              <dc-import name="Buddy" char="momo" state="idle" portrait="{{ true }}" size="52" hint-size="52px,49px"></dc-import>
+            </div>
+            <div style="flex-grow: 1; display: flex; flex-direction: column">
+              <span style="font-size: 15px; font-weight: 900">CJ 팀 현황</span>
+              <span style="font-size: 12px; color: #6B6080">모모가 지켜보는 중</span>
+            </div>
+            <button aria-label="패널 닫기" onClick="{{togglePanel}}" class="pxo" style="width: 32px; height: 32px; border: 0; background: #EFEAF7; color: #2B2140; font-family: 'Press Start 2P', monospace; font-size: 10px">X</button>
+          </div>
+          <sc-for list="{{team}}" as="m" hint-placeholder-count="6">
+            <div style="display: grid; grid-template-columns: 44px 1fr 12px; gap: 10px; align-items: center; font-size: 13px; font-weight: 500; padding: 6px 0; border-top: 2px dashed #E6E0F0">
+              <span style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #5B55E0">{{m.code}}</span>
+              <span>{{m.text}}</span>
+              <span style="width: 10px; height: 10px; background: {{m.dot}}; border: 2px solid #2B2140"></span>
+            </div>
+          </sc-for>
+          <a href="Main.dc.html" class="pxo" style="height: 42px; background: #5B55E0; color: #FFFFFF; font-size: 13px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center">Overview 열기</a>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{bubbleOpen}}" hint-placeholder-val="{{ true }}">
+    <div class="pop" style="position: absolute; right: 290px; bottom: 380px; width: 330px">
+      <svg width="20" height="20" viewBox="0 0 5 5" shape-rendering="crispEdges" aria-hidden="true" class="twinkle" style="position: absolute; left: -24px; top: -8px">
+        <sc-for list="{{star}}" as="p" hint-placeholder-count="9"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for>
+      </svg>
+      <svg width="14" height="14" viewBox="0 0 5 5" shape-rendering="crispEdges" aria-hidden="true" class="twinkle2" style="position: absolute; right: -18px; top: 26px">
+        <sc-for list="{{star}}" as="p" hint-placeholder-count="9"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for>
+      </svg>
+      <span class="pxo" style="position: absolute; right: -10px; top: -14px; z-index: 2; padding: 4px 8px; background: #FF5C8A; color: #FFFFFF; font-size: 12px; font-weight: 900">+2</span>
+      <div style="filter: drop-shadow(5px 5px 0 rgba(43,33,64,.22))">
+        <div class="pxr" style="background: #2B2140; padding: 4px">
+          <div class="pxr" style="background: #FFFFFF; padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; align-items: center; gap: 6px">
+              <svg width="14" height="12" viewBox="0 0 7 6" shape-rendering="crispEdges" aria-hidden="true">
+                <sc-for list="{{heart}}" as="p" hint-placeholder-count="20"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for>
+              </svg>
+              <span style="font-size: 12px; font-weight: 900; color: #D63A72">모모 · 컨펌 부탁해요</span>
+              <span style="flex-grow: 1"></span>
+              <span style="font-family: 'Press Start 2P', monospace; font-size: 8px; color: #5B55E0">CJ·CW</span>
+            </div>
+            <p style="margin: 0; font-size: 17px; font-weight: 900; line-height: 1.5">대표님~! 상세페이지 카피 v2<br>봐주세요 ♡</p>
+            <div style="display: flex; gap: 8px; margin-top: 2px">
+              <a href="Main.dc.html" class="pxo" style="flex: 1; height: 36px; background: #FFD1E0; color: #2B2140; font-size: 13px; font-weight: 900; text-decoration: none; display: flex; align-items: center; justify-content: center">볼게요!</a>
+              <button onClick="{{snooze}}" class="pxo" style="flex: 1; height: 36px; border: 0; background: #F1EEF7; color: #5A5070; font-size: 13px; font-weight: 700">이따가</button>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 160px; margin-top: -4px">
+          <div style="width: 28px; height: 6px; background: #FFFFFF; border-left: 4px solid #2B2140; border-right: 4px solid #2B2140"></div>
+          <div style="width: 20px; height: 6px; margin-left: 4px; background: #FFFFFF; border-left: 4px solid #2B2140; border-right: 4px solid #2B2140"></div>
+          <div style="width: 12px; height: 6px; margin-left: 8px; background: #FFFFFF; border-left: 4px solid #2B2140; border-right: 4px solid #2B2140"></div>
+          <div style="width: 12px; height: 4px; margin-left: 8px; background: #2B2140"></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position: absolute; right: 58px; bottom: 384px; display: flex; flex-direction: column; align-items: flex-end">
+    <div class="pxr" style="background: #2B2140; padding: 3px">
+      <div class="pxr" style="background: #F6F3FB; padding: 8px 14px; font-size: 13px; font-weight: 700; color: #5A5070">열일 중 · · ·</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-right: 120px; margin-top: 4px">
+      <span style="width: 12px; height: 12px; background: #F6F3FB; border: 3px solid #2B2140; box-sizing: border-box"></span>
+      <span style="width: 8px; height: 8px; background: #2B2140; margin-right: 8px"></span>
+    </div>
+  </div>
+
+  <div style="position: absolute; right: 40px; bottom: 40px; width: 640px; height: 116px">
+    <div style="position: absolute; left: 0; right: 0; top: 0; height: 20px; background: #C98A55; border: 4px solid #4A3020; box-shadow: inset 0 4px 0 #E0A874"></div>
+    <div style="position: absolute; left: 16px; right: 16px; top: 28px; height: 28px; background: #9A5F33; border: 4px solid #4A3020; border-top: 0; box-shadow: inset 0 -4px 0 #7A4A26"></div>
+    <div style="position: absolute; left: 36px; top: 56px; width: 16px; height: 60px; background: #7A4A26; border: 4px solid #4A3020; border-top: 0"></div>
+    <div style="position: absolute; right: 36px; top: 56px; width: 16px; height: 60px; background: #7A4A26; border: 4px solid #4A3020; border-top: 0"></div>
+  </div>
+
+  <div style="position: absolute; right: 600px; bottom: 156px">
+    <svg width="72" height="96" viewBox="0 0 12 16" shape-rendering="crispEdges" aria-hidden="true">
+      <sc-for list="{{plant}}" as="p" hint-placeholder-count="40"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for>
+    </svg>
+  </div>
+  <div style="position: absolute; right: 545px; bottom: 156px">
+    <svg width="48" height="48" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">
+      <sc-for list="{{mug}}" as="p" hint-placeholder-count="30"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for>
+    </svg>
+  </div>
+
+  <div style="position: absolute; right: 330px; bottom: 150px">
+    <button aria-label="모모 · CJ 팀 현황 열기" onClick="{{togglePanel}}" style="border: 0; background: transparent; padding: 0">
+      <dc-import name="Buddy" char="momo" state="{{momoState}}" size="220" hint-size="213px,228px"></dc-import>
+    </button>
+  </div>
+  <div style="position: absolute; right: 90px; bottom: 150px">
+    <dc-import name="Buddy" char="leo" state="work" size="220" hint-size="213px,228px"></dc-import>
+  </div>
+
+  <div class="pxo" style="position: absolute; right: 386px; bottom: 100px; padding: 4px 12px; background: #F2D9A8; font-size: 12px; font-weight: 900; color: #4A3020">모모 · CJ</div>
+  <div class="pxo" style="position: absolute; right: 140px; bottom: 100px; padding: 4px 12px; background: #F2D9A8; font-size: 12px; font-weight: 900; color: #4A3020">레오 · 코오롱</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { bubble: true, panel: false };
+  }
+  sprite(rows, pal) {
+    var out = [];
+    rows.forEach(function (r, y) { for (var x = 0; x < r.length; x++) { var c = r.charAt(x); if (c !== '.') out.push({ x: x, y: y, c: pal[c] }); } });
+    return out;
+  }
+  renderVals() {
+    var self = this;
+    var plant = this.sprite([
+      '....gg......', '...gGg..g...', '..gGGg.gGg..', '...gGggGGg..', '.g..gGGGg...', 'gGg..gGg..g.', 'gGGg.gGg.gGg', '.gGGggGggGg.',
+      '..ggGGGGGg..', '....gGGg....', '..OOOOOOOO..', '..OttttttO..', '..OtTTTTtO..', '...OttttO...', '...OttttO...', '....OOOO....'
+    ], { g: '#2F7D4A', G: '#5DB86A', O: '#4A3020', t: '#C8693F', T: '#E08A5A' });
+    var mug = this.sprite(['..w..w..', '.OOOOO..', '.OwwwOO.', '.OwbwO.O', '.OwwwO.O', '.OwwwOO.', '.OOOOO..', '........'], { O: '#2B2140', w: '#FFFFFF', b: '#FF7FA8' });
+    var heart = this.sprite(['.rr.rr.', 'rpprppr', 'rpwpppr', '.rpppr.', '..rpr..', '...r...'], { r: '#C2306A', p: '#FF7FA8', w: '#FFFFFF' });
+    var star = this.sprite(['..y..', '..y..', 'yyYyy', '..y..', '..y..'], { y: '#FFC93C', Y: '#FFFFFF' });
+    var team = [
+      { code: 'AE', text: '오픈 리퀘스트 3 · 컨펌 1', dot: '#F2B45A' },
+      { code: 'AP', text: '컨셉 3안 컨펌 대기', dot: '#5DB86A' },
+      { code: 'CW', text: '컨펌 요청 2건', dot: '#5DB86A' },
+      { code: 'AD', text: 'KV 리젝 1 · 수정 중', dot: '#F2B45A' },
+      { code: 'PD', text: '슈팅 D-4', dot: '#5DB86A' },
+      { code: 'MP', text: '매체 연동 필요', dot: '#B9B3A6' }
+    ];
+    return {
+      plant: plant, mug: mug, heart: heart, star: star, team: team,
+      bubbleOpen: this.state.bubble,
+      panelOpen: this.state.panel,
+      momoState: this.state.bubble ? 'alert' : 'work',
+      snooze: function () { self.setState({ bubble: false }); },
+      togglePanel: function () { self.setState({ panel: !self.state.panel }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

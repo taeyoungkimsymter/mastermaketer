@@ -8,6 +8,7 @@
 고객사 경계는 CLAUDE.md·hook 과 같은 '실수 방지 장치'이며 보안 경계가 아니다(docs/limitations.md).
 """
 import argparse
+import datetime
 import json
 import mimetypes
 import re
@@ -17,6 +18,8 @@ import subprocess
 import sys
 import threading
 import webbrowser
+from decimal import Decimal
+from types import SimpleNamespace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -24,6 +27,7 @@ from urllib.parse import parse_qs, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 import feedback  # noqa: E402
+import ad_report  # noqa: E402
 import status  # noqa: E402
 from common import AgencyError  # noqa: E402
 
@@ -267,7 +271,7 @@ def list_deliverables(client, project):
         for p in d.iterdir():
             if p.is_file() and p.suffix in READABLE_EXT:
                 s = states.get(p.name) or {}
-                items.append({"area": area, "name": p.name, "state": s.get("state"), "by": s.get("by"),
+                items.append({"area": area, "name": p.name, "state": s.get("state"), "by": s.get("by"), "at": s.get("at"), "note": s.get("note"),
                               "mtime": int(p.stat().st_mtime)})
     items.sort(key=lambda x: -x["mtime"])
     return items
@@ -289,6 +293,445 @@ def channels():
                 for s in json.loads(f.read_text(encoding="utf-8")).get("specs", [])]
     except (OSError, ValueError):
         return []
+
+
+# ---------- 고객사 라이브러리 (레퍼런스·경쟁사·검색 키워드) ----------
+# 사용자가 직접 모으는 참고 자료. clients/{id}/library/library.json 한 곳에만 저장한다.
+# 외부 서비스에서 자동으로 가져오지 않으며, 수치(검색량·CPC 등)는 저장하지 않는다.
+LIB_KINDS = {
+    "references": {"title": (80, True), "url": (300, False), "brand": (60, False), "board": (40, False), "note": (300, False)},
+    "competitors": {"brand": (60, True), "url": (300, False), "channel": (40, False), "note": (300, False)},
+    "keywords": {"keyword": (60, True), "type": (10, False), "note": (200, False)},
+    "events": {"date": (10, True), "title": (80, True), "type": (10, False), "channel": (40, False), "note": (200, False),
+               "role": (2, False), "link": (300, False)},
+    "requests": {"title": (100, True), "channel": (10, False), "role": (2, False), "due": (10, False),
+                 "priority": (10, False), "received": (10, False)},
+    "issues": {"date": (10, True), "type": (20, True), "content": (200, True), "action": (200, False)},
+}
+REQ_CHANNELS = ("메일", "카톡", "미팅", "기타")
+REQ_STATUS = ("배정", "진행 중", "클로즈")
+ISSUE_TYPES = ("일정 딜레이", "소재 리젝", "성과 이상", "매체 정책·계정", "클라이언트 클레임")
+ISSUE_STATUS = ("해결", "조치 중", "미해결")
+UPDATABLE = {"requests": ("status", "role", "due", "priority"), "issues": ("status", "action"), "events": ("link", "role", "wait")}
+EVENT_TYPES = ("콘텐츠", "기획", "촬영", "회의", "기타")
+KEYWORD_TYPES = ("브랜드", "경쟁사", "일반")
+LIB_MAX = 300
+LIB_LOCK = threading.Lock()
+
+
+def lib_file(client):
+    return common.client_dir(client) / "library" / "library.json"
+
+
+def lib_load(client):
+    out = {k: [] for k in LIB_KINDS}
+    try:
+        data = json.loads(lib_file(client).read_text(encoding="utf-8"))
+        for k in out:
+            if isinstance(data.get(k), list):
+                out[k] = data[k]
+    except (OSError, ValueError):
+        pass
+    return out
+
+
+def lib_change(client, kind, op, item, item_id):
+    if kind not in LIB_KINDS:
+        raise AgencyError("알 수 없는 자료 종류입니다.")
+    with LIB_LOCK:
+        data = lib_load(client)
+        rows = data[kind]
+        if op == "delete":
+            data[kind] = [r for r in rows if r.get("id") != item_id]
+        elif op == "add":
+            if len(rows) >= LIB_MAX:
+                raise AgencyError(f"한 종류에 최대 {LIB_MAX}개까지 저장할 수 있습니다.")
+            row = {}
+            for name, (limit, required) in LIB_KINDS[kind].items():
+                v = clean_text((item or {}).get(name), limit)
+                if required and not v:
+                    raise AgencyError("필수 항목을 입력하세요.")
+                if name in ("url", "link") and v and not re.match(r"^https?://\S+$", v):
+                    raise AgencyError("링크는 http:// 또는 https:// 로 시작해야 합니다.")
+                if name == "type" and kind == "keywords":
+                    v = v or "일반"
+                    if v not in KEYWORD_TYPES:
+                        raise AgencyError("키워드 유형은 브랜드/경쟁사/일반 중 하나입니다.")
+                if name == "type" and kind == "events":
+                    v = v or "기타"
+                    if v not in EVENT_TYPES:
+                        raise AgencyError("일정 유형은 콘텐츠/기획/촬영/회의/기타 중 하나입니다.")
+                if kind == "requests":
+                    if name == "channel":
+                        v = v or "기타"
+                        if v not in REQ_CHANNELS:
+                            raise AgencyError("채널은 메일/카톡/미팅/기타 중 하나입니다.")
+                    if name == "priority":
+                        v = v or "Normal"
+                        if v not in ("High", "Normal"):
+                            raise AgencyError("우선순위는 High 또는 Normal 입니다.")
+                    if name == "received":
+                        v = v or common.today_kst().isoformat()
+                if kind == "issues" and name == "type" and v not in ISSUE_TYPES:
+                    raise AgencyError("이슈 유형이 올바르지 않습니다.")
+                if name == "role" and v and v not in ROLE_CODES:
+                    raise AgencyError("역할 코드는 AE/AP/CW/AD/PD/MP 중 하나입니다.")
+                if name in ("date", "due", "received") and v:
+                    try:
+                        datetime.date.fromisoformat(v)
+                    except ValueError:
+                        raise AgencyError("날짜는 2026-10-23 형식이어야 합니다.")
+                row[name] = v
+            if kind == "keywords" and any(r.get("keyword", "").lower() == row["keyword"].lower() for r in rows):
+                raise AgencyError("이미 등록된 키워드입니다.")
+            row["id"] = secrets.token_hex(4)
+            row["added"] = common.today_kst().isoformat()
+            if kind == "events":
+                row["done"] = False
+            if kind == "requests":
+                row["status"] = "배정"
+            if kind == "issues":
+                row["status"] = "미해결"
+            rows.append(row)
+        elif op == "update" and kind in UPDATABLE:
+            hit = next((r for r in rows if r.get("id") == item_id), None)
+            if not hit:
+                raise AgencyError("항목을 찾을 수 없습니다.")
+            today_s = common.today_kst().isoformat()
+            for k, v in (item or {}).items():
+                if k not in UPDATABLE[kind]:
+                    raise AgencyError("바꿀 수 없는 항목입니다.")
+                if k == "wait":
+                    hit["wait"] = bool(v)
+                    continue
+                v = clean_text(v, 300 if k == "link" else 200)
+                if k == "status":
+                    if v not in (REQ_STATUS if kind == "requests" else ISSUE_STATUS):
+                        raise AgencyError("상태 값이 올바르지 않습니다.")
+                    if kind == "requests":
+                        hit["closed_at"] = today_s if v == "클로즈" else ""
+                elif k == "role" and v and v not in ROLE_CODES:
+                    raise AgencyError("역할 코드는 AE/AP/CW/AD/PD/MP 중 하나입니다.")
+                elif k == "priority" and v not in ("High", "Normal"):
+                    raise AgencyError("우선순위는 High 또는 Normal 입니다.")
+                elif k == "due" and v:
+                    try:
+                        datetime.date.fromisoformat(v)
+                    except ValueError:
+                        raise AgencyError("날짜는 2026-10-23 형식이어야 합니다.")
+                elif k == "link" and v and not re.match(r"^https?://\S+$", v):
+                    raise AgencyError("링크는 http:// 또는 https:// 로 시작해야 합니다.")
+                hit[k] = v
+                if kind == "events" and k == "link" and v and not hit.get("done"):
+                    hit["done"], hit["done_at"] = True, today_s  # 링크를 등록했다 = 포스팅 확인
+        elif op == "toggle" and kind == "events":
+            hit = next((r for r in rows if r.get("id") == item_id), None)
+            if not hit:
+                raise AgencyError("일정을 찾을 수 없습니다.")
+            hit["done"] = not hit.get("done")
+            hit["done_at"] = common.today_kst().isoformat() if hit["done"] else ""
+        else:
+            raise AgencyError("알 수 없는 요청입니다.")
+        f = lib_file(client)
+        f.parent.mkdir(parents=True, exist_ok=True)
+        tmp = f.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(f)
+        return data
+
+
+ROLE_CODES = ("AE", "AP", "CW", "AD", "PD", "MP")
+# 일정 유형 -> 담당 역할 코드(배정 정보가 따로 없으므로 유형으로 추정해 표시한다)
+EVENT_ROLE = {"콘텐츠": "AE", "기획": "AP", "촬영": "PD", "회의": "AE"}
+PHASES = ("Brief", "Concept", "Production", "Review", "Confirm", "Report")
+STAGE_PHASE = {"brief": 1, "concepts": 2, "selected": 2, "script": 3, "storyboard": 3, "shoot_plan": 3}
+
+
+SETTINGS_FILE = common.root() / ".agency-state" / "settings.json"
+
+
+def read_settings():
+    try:
+        d = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def write_settings(rep_name):
+    """대표 이름(컨펌·수정 요청자). .agency-state/ 는 버전 관리에서 제외된다."""
+    d = read_settings()
+    d["rep_name"] = clean_text(rep_name, 40)
+    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = SETTINGS_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(SETTINGS_FILE)
+    return d
+
+
+def write_team(client, team):
+    if not isinstance(team, dict):
+        raise AgencyError("담당자 형식이 올바르지 않습니다.")
+    out = {}
+    for code in ROLE_CODES:
+        v = clean_text(team.get(code), 40)
+        if v:
+            out[code] = v
+    f = common.client_dir(client) / "team.json"
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(f)
+    return out
+
+
+def all_events():
+    """메인 화면용 통합 일정(읽기 전용). 일정 표시에 필요한 항목만 내보내고 메모는 제외한다."""
+    out = []
+    for c in list_clients():
+        for e in lib_load(c["id"])["events"]:
+            if not e.get("date") or not e.get("title"):
+                continue
+            out.append({"client": c["id"], "brand": c["name"], "id": e.get("id"), "date": e["date"], "title": e["title"],
+                        "type": e.get("type") or "기타", "channel": e.get("channel") or "", "done": bool(e.get("done")),
+                        "role": e.get("role") or EVENT_ROLE.get(e.get("type") or "기타", ""), "sample": bool(e.get("sample")),
+                        "link": e.get("link") or ""})
+    return out
+
+
+BUDDY_CHARS = ("leo", "luna", "momo", "doyun", "haru", "jun")
+
+
+def read_buddy(client, index=0):
+    """clients/{id}/buddy.json -> {"char": "momo"}. 지정이 없으면 어카운트 순서대로 기본 캐릭터."""
+    try:
+        d = json.loads((common.client_dir(client) / "buddy.json").read_text(encoding="utf-8"))
+        if isinstance(d, dict) and d.get("char") in BUDDY_CHARS:
+            return d["char"], True
+    except (OSError, ValueError):
+        pass
+    return BUDDY_CHARS[index % len(BUDDY_CHARS)], False
+
+
+def write_buddy(client, char):
+    if char not in BUDDY_CHARS:
+        raise AgencyError("알 수 없는 캐릭터입니다.")
+    f = common.client_dir(client) / "buddy.json"
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"char": char}, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(f)
+    return char
+
+
+def read_team(client):
+    """clients/{id}/team.json ({"AE": "이름", ...}). 파일이 없으면 모두 미배정."""
+    try:
+        data = json.loads((common.client_dir(client) / "team.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {k: str(v)[:40] for k, v in data.items() if k in ROLE_CODES and v} if isinstance(data, dict) else {}
+
+
+def account_summary(c, today):
+    """어카운트 카드용 요약. 상태 파일·일정에서 계산한 값만 쓰고, 근거가 없으면 None."""
+    cid = c["id"]
+    name, _, note = c["name"].partition(" (")
+    projects, pending, stale, active_work, report_done, stage_no, n_deliv = 0, 0, 0, 0, False, 1, 0
+    pdir = common.client_dir(cid) / "projects"
+    if pdir.is_dir():
+        for d in sorted(pdir.iterdir()):
+            f = d / "status.json"
+            if not f.is_file():
+                continue
+            try:
+                st = json.loads(f.read_text(encoding="utf-8"))
+            except ValueError:
+                continue
+            projects += 1
+            stage_no = max(stage_no, STAGE_PHASE.get(st.get("stage"), 1))
+            for fname, ds in (st.get("deliverables") or {}).items():
+                n_deliv += 1
+                state = (ds or {}).get("state")
+                if state == "review_passed":
+                    pending += 1
+                    at = str((ds or {}).get("at") or "")[:10]
+                    if at and at < (today - datetime.timedelta(days=2)).isoformat():
+                        stale += 1
+                elif state in ("draft", "needs_revision"):
+                    active_work += 1
+                elif state == "approved" and fname.lower().startswith("report"):
+                    report_done = True
+    phase_no = 6 if report_done else 5 if pending else 4 if active_work else stage_no
+    lib = lib_load(cid)
+    evs = [e for e in lib["events"] if e.get("date") and e.get("title")]
+    t = today.isoformat()
+    mon = today - datetime.timedelta(days=today.weekday())
+    wk = (mon.isoformat(), (mon + datetime.timedelta(days=6)).isoformat())
+    posts = [e for e in evs if e.get("type") == "콘텐츠" and wk[0] <= e["date"] <= wk[1]]
+    overdue = [e for e in evs if e.get("type") == "콘텐츠" and not e.get("done") and e["date"] < t]
+    req_late = [r for r in lib["requests"] if r.get("status") != "클로즈" and r.get("due") and r["due"] < t]
+    nxt = sorted((e for e in evs if not e.get("done") and e["date"] >= t), key=lambda e: (e["date"], e["title"]))
+    # 상태 규칙: Delayed(딜레이 1건 이상) > At Risk(2일 넘게 컨펌 대기) > On Track. Onboarding 은 일정도 결과물도 하나도 없을 때만.
+    if not evs and not n_deliv and not lib["requests"] and not lib["issues"]:
+        status = "Onboarding"
+    elif overdue or req_late:
+        status = "Delayed"
+    elif stale:
+        status = "At Risk"
+    else:
+        status = "On Track"
+    month_cost = None
+    try:
+        mrows = [r for r in perf_load(cid)[0] if r["date"].strftime("%Y-%m") == today.strftime("%Y-%m")]
+        if mrows:
+            month_cost = _f(sum((r["cost"] for r in mrows), Decimal(0)))
+    except (AgencyError, OSError):
+        pass
+    return {"id": cid, "name": name, "note": note.rstrip(")"), "month_cost": month_cost, "status": status, "phase": PHASES[phase_no - 1],
+            "phase_no": phase_no, "pending": pending, "overdue": len(overdue) + len(req_late),
+            "overdue_posts": len(overdue), "overdue_req": len(req_late),
+            "post_done": sum(1 for e in posts if e.get("done")), "post_total": len(posts), "projects": projects,
+            "team": read_team(cid), "next": ({"date": nxt[0]["date"], "title": nxt[0]["title"]} if nxt else None)}
+
+
+def accounts_overview():
+    today = common.today_kst()
+    mon = today - datetime.timedelta(days=today.weekday())
+    return {"today": today.isoformat(), "week": [mon.isoformat(), (mon + datetime.timedelta(days=6)).isoformat()],
+            "accounts": [dict(account_summary(c, today), **dict(zip(("char", "char_set"), read_buddy(c["id"], i))))
+                         for i, c in enumerate(list_clients())], "events": all_events()}
+
+
+
+# ---------- Performance (data/raw 의 CSV·XLSX 를 ad_report 의 함수로 계산한다. 새 계산식을 만들지 않는다) ----------
+
+RAW_EXT = (".csv", ".xlsx", ".xlsm")
+MEDIA_LABEL = {"google-ads": "Google Ads", "google-analytics": "Google Analytics", "meta": "Meta 광고"}
+
+
+def platform_of(channel):
+    c = (channel or "").lower()
+    if "google" in c or "구글" in c:
+        return "google-ads"
+    if any(k in c for k in ("meta", "facebook", "instagram", "페이스북", "메타", "인스타")):
+        return "meta"
+    return "other"
+
+
+def perf_load(client):
+    rawdir = common.client_dir(client) / "data" / "raw"
+    rows, issues, has_rev, errors, files = [], [], False, [], []
+    if rawdir.is_dir():
+        for f in sorted(rawdir.iterdir()):
+            if not f.is_file() or f.suffix.lower() not in RAW_EXT:
+                continue
+            try:
+                good, iss, h = ad_report.clean(ad_report.read_table(f))
+            except AgencyError as e:
+                errors.append({"file": f.name, "error": str(e)})
+                continue
+            files.append(f.name)
+            rows += good
+            issues += [dict(i, file=f.name) for i in iss]
+            has_rev = has_rev or h
+    return rows, issues, has_rev, errors, files
+
+
+def _f(v):
+    return float(v) if v is not None else None
+
+
+def _tot(rows, has_rev):
+    t = ad_report.aggregate(rows, has_rev)
+    m, na = ad_report.metrics(t, has_rev)
+    return ({k: (_f(v) if isinstance(v, Decimal) else v) for k, v in t.items()}, {k: ad_report.q(v) for k, v in m.items()}, na)
+
+
+def performance(client, start, end, off=()):
+    rows, issues, has_rev, errors, files = perf_load(client)
+    for r in rows:
+        r["media"] = platform_of(r["channel"])
+    present = sorted({r["media"] for r in rows})
+    rows = [r for r in rows if r["media"] not in off]
+    days = (end - start).days + 1
+    pe = start - datetime.timedelta(days=1)
+    ps = pe - datetime.timedelta(days=days - 1)
+    a = SimpleNamespace(start=start.isoformat(), end=end.isoformat(), prev_start=ps.isoformat(), prev_end=pe.isoformat(),
+                        currency="KRW", tax="unknown", tz="Asia/Seoul", attribution="unknown", conversion_def="unknown",
+                        finalized="unknown", as_of=None)
+    res = ad_report.build(rows, has_rev, issues, a)
+    cur = ad_report.period_rows(rows, start, end)
+    cur_media = {}
+    for r in cur:
+        cur_media.setdefault(r["media"], []).append(r)
+
+    def group(kind):
+        def key(d):
+            if kind == "day":
+                return d.isoformat()
+            if kind == "week":
+                return (d - datetime.timedelta(days=d.weekday())).isoformat()
+            return d.strftime("%Y-%m")
+        keys, by = set(), {}
+        for m, rs in cur_media.items():
+            buckets = {}
+            for r in rs:
+                buckets.setdefault(key(r["date"]), []).append(r)
+            by[m] = {}
+            for k, b in buckets.items():
+                t = ad_report.aggregate(b, has_rev)
+                by[m][k] = {n: _f(t[n]) for n in ("impressions", "clicks", "cost", "conversions")}
+                keys.add(k)
+        return {"keys": sorted(keys), "by": by}
+    camp = {}
+    for r in cur:
+        camp.setdefault((r["media"], r["channel"], r["campaign"]), []).append(r)
+    campaigns = []
+    for (m, ch, cp), rs in sorted(camp.items()):
+        t, mt, _ = _tot(rs, has_rev)
+        campaigns.append({"media": m, "channel": ch, "campaign": cp, "totals": t, "metrics": mt})
+    media = []
+    for m in sorted(set(present) | set(MEDIA_LABEL)):
+        rs = [r for r in rows if r["media"] == m and start <= r["date"] <= end]
+        media.append({"id": m, "label": MEDIA_LABEL.get(m, "기타 채널"), "present": m in present,
+                      "cost": _f(sum((r["cost"] for r in rs), Decimal(0))) if rs else None,
+                      "clicks": _f(sum((r["clicks"] for r in rs), Decimal(0))) if rs else None})
+    dates = [r["date"] for r in rows]
+    comp = res.get("comparison")
+    return {"period": res["period"], "files": files, "errors": errors, "has_files": bool(files),
+            "data_range": [min(dates).isoformat(), max(dates).isoformat()] if dates else None,
+            "has_rows": bool(cur), "totals": res["current"]["totals"], "metrics": res["current"]["metrics"],
+            "na": res["current"]["na_reasons"], "deltas": (comp or {}).get("deltas"),
+            "prev": ({"start": ps.isoformat(), "end": pe.isoformat()} if comp else None),
+            "series": {g: group(g) for g in ("day", "week", "month")}, "campaigns": campaigns, "media": media,
+            "warnings": res["warnings"], "limitations": res["limitations"],
+            "excluded": issues[:20], "excluded_count": len(issues)}
+
+
+def save_raw(client, name, b64):
+    import base64
+    import binascii
+    name = re.sub(r"[^A-Za-z0-9._\-가-힣]", "_", Path(str(name or "")).name)[:60]
+    if Path(name).suffix.lower() not in RAW_EXT:
+        raise AgencyError("CSV 또는 XLSX 파일만 불러올 수 있습니다.")
+    try:
+        data = base64.b64decode(b64 or "", validate=True)
+    except (binascii.Error, ValueError):
+        raise AgencyError("파일 내용을 읽을 수 없습니다.")
+    if not data or len(data) > 4_000_000:
+        raise AgencyError("파일이 비었거나 4MB 보다 큽니다.")
+    d = common.client_dir(client) / "data" / "raw"
+    d.mkdir(parents=True, exist_ok=True)
+    p, n = d / name, 1
+    while p.exists():  # 원본은 덮어쓰지 않는다
+        n += 1
+        p = d / f"{Path(name).stem}-{n}{Path(name).suffix}"
+    p.write_bytes(data)
+    try:
+        good, iss, _ = ad_report.clean(ad_report.read_table(p))
+    except AgencyError:
+        p.unlink()
+        raise
+    return {"name": p.name, "rows": len(good), "excluded": len(iss)}
 
 
 # ---------- HTTP ----------
@@ -313,9 +756,9 @@ class Handler(BaseHTTPRequestHandler):
         port = self.server.server_address[1]
         return self.headers.get("Host", "") in (f"127.0.0.1:{port}", f"localhost:{port}")
 
-    def _body(self):
+    def _body(self, limit=100_000):
         n = int(self.headers.get("Content-Length") or 0)
-        if n > 100_000:
+        if n > limit:
             raise AgencyError("요청이 너무 큽니다.")
         return json.loads(self.rfile.read(n) or b"{}")
 
@@ -351,7 +794,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(403, {"error": "인증 토큰이 맞지 않습니다. 페이지를 새로 고침하세요."})
         q = {k: v[0] for k, v in parse_qs(u.query).items()}
         try:
-            body = self._body() if method == "POST" else {}
+            body = self._body(6_000_000 if u.path == "/api/raw-upload" else 100_000) if method == "POST" else {}
             self._send(200, self.route(method, u.path, q, body))
         except AgencyError as e:
             self._send(400, {"error": str(e)})
@@ -365,7 +808,8 @@ class Handler(BaseHTTPRequestHandler):
         running = bool(JOB and JOB.state == "running")
         if path == "/api/state":
             return {"active": common.get_active(), "clients": list_clients(), "claude": bool(shutil.which("claude")),
-                    "running": running, "channels": channels(), "today": common.today_kst().isoformat()}
+                    "running": running, "channels": channels(), "today": common.today_kst().isoformat(),
+                    "rep": read_settings().get("rep_name", "")}
         if path == "/api/session" and method == "POST":
             common.set_active(common.validate_id(b.get("client"), "client_id"))
             return {"active": common.get_active()}
@@ -417,6 +861,14 @@ class Handler(BaseHTTPRequestHandler):
             st = status.set_deliverable(c, common.validate_id(b.get("project"), "project_id"), clean_text(b.get("file"), 120),
                                         "approved", by)
             return {"state": st["deliverables"][b["file"]]}
+        if path == "/api/revise" and method == "POST":
+            c = need_active()
+            by = clean_text(b.get("by"), 40)
+            if not by:
+                raise AgencyError("요청자 이름을 입력하세요.")
+            st = status.set_deliverable(c, common.validate_id(b.get("project"), "project_id"), clean_text(b.get("file"), 120),
+                                        "needs_revision", by, clean_text(b.get("note"), 300) or None)
+            return {"state": st["deliverables"][b["file"]]}
         if path == "/api/feedback":
             c = need_active()
             return {"items": feedback.load(c)["items"]}
@@ -428,6 +880,35 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/feedback/reject" and method == "POST":
             c = need_active()
             return {"item": feedback.reject(c, clean_text(b.get("id"), 20))}
+        if path == "/api/settings" and method == "POST":
+            return {"rep": write_settings(b.get("rep_name")).get("rep_name", "")}
+        if path == "/api/buddy-char" and method == "POST":
+            return {"char": write_buddy(need_active(), clean_text(b.get("char"), 10))}
+        if path == "/api/team" and method == "POST":
+            return {"team": write_team(need_active(), b.get("team"))}
+        if path == "/api/performance":
+            c = need_active()
+            today = common.today_kst()
+            try:
+                end = datetime.date.fromisoformat(q["end"]) if q.get("end") else today
+                start = datetime.date.fromisoformat(q["start"]) if q.get("start") else end - datetime.timedelta(days=max(1, min(int(q.get("days") or 7), 366)) - 1)
+            except ValueError:
+                raise AgencyError("날짜 형식이 올바르지 않습니다.")
+            if end < start or (end - start).days > 366:
+                raise AgencyError("기간이 올바르지 않습니다.")
+            return performance(c, start, end, set(x for x in (q.get("off") or "").split(",") if x))
+        if path == "/api/raw-upload" and method == "POST":
+            c = need_active()
+            return save_raw(c, b.get("name"), b.get("data"))
+        if path == "/api/calendar":
+            return {"events": all_events()}
+        if path == "/api/accounts":
+            return accounts_overview()
+        if path == "/api/library":
+            c = need_active()
+            if method == "POST":
+                return lib_change(c, b.get("kind"), b.get("op"), b.get("item"), clean_text(b.get("id"), 20))
+            return lib_load(c)
         raise AgencyError("알 수 없는 요청입니다.")
 
 
@@ -438,7 +919,7 @@ def main():
     a = ap.parse_args()
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
     url = f"http://127.0.0.1:{a.port}/"
-    print(f"AI 주니어 팀 화면: {url}  (이 PC에서만 열립니다. 종료: Ctrl+C)")
+    print(f"Team 화면: {url}  (이 PC에서만 열립니다. 종료: Ctrl+C)")
     if not a.no_open:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:

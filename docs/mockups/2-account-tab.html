@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>AE 탭</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Inter:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3533A8}a:hover{color:#26248A}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 1180px; display: flex; flex-wrap: wrap; background: #F4F5F9; color: #15172B; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px">
+
+  <nav aria-label="주 메뉴" style="flex: 0 0 68px; background: #1B1A4B; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 0">
+    <div style="width: 36px; height: 36px; border-radius: 10px; background: #4B48D0; display: flex; align-items: center; justify-content: center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="7"></circle></svg>
+    </div>
+    <button aria-label="브랜드 캘린더" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #B9B8E8; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+    </button>
+    <div style="width: 28px; height: 1px; background: #34347A"></div>
+    <button aria-label="CJ 고객사" style="width: 44px; height: 44px; border-radius: 12px; border: 2px solid #8E8BF0; background: #4B48D0; color: #FFFFFF; font-weight: 700">C</button>
+    <button aria-label="코오롱 고객사" style="width: 44px; height: 44px; border-radius: 12px; border: 0; background: #2C2B63; color: #D8D7F5; font-weight: 700">코</button>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 26px 40px 48px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: #5B5F73">
+      <a href="Agency.dc.html" style="color: #5B5F73; text-decoration: none">‹ All Accounts</a>
+      <span aria-hidden="true">›</span>
+      <span style="font-size: 18px; font-weight: 700; color: #15172B">CJ (공개자료 기반 데모)</span>
+      <span style="height: 22px; padding: 0 8px; border-radius: 6px; border: 1px dashed #E2E3EC; color: #5B5F73; font-size: 11px; display: inline-flex; align-items: center">예시 데이터</span>
+    </header>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #E2E3EC">
+      <a href="Main.dc.html" style="height: 44px; padding: 0 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; color: #5B5F73; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center">Overview</a>
+      <span style="height: 44px; padding: 0 14px; border-bottom: 2px solid #3533A8; margin-bottom: -1px; color: #3533A8; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center">Account</span>
+      <span style="height: 44px; padding: 0 14px; margin-bottom: -1px; color: #5B5F73; font-size: 14px; display: inline-flex; align-items: center">Strategy</span>
+      <span style="height: 44px; padding: 0 14px; margin-bottom: -1px; color: #5B5F73; font-size: 14px; display: inline-flex; align-items: center">Copy</span>
+      <span style="height: 44px; padding: 0 14px; margin-bottom: -1px; color: #5B5F73; font-size: 14px; display: inline-flex; align-items: center">Art</span>
+      <span style="height: 44px; padding: 0 14px; margin-bottom: -1px; color: #5B5F73; font-size: 14px; display: inline-flex; align-items: center">Film</span>
+      <span style="height: 44px; padding: 0 14px; margin-bottom: -1px; color: #5B5F73; font-size: 14px; display: inline-flex; align-items: center">Performance</span>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px">
+      <h1 style="margin: 0; font-size: 20px; font-weight: 700; font-family: Inter, 'Noto Sans KR', sans-serif">Account</h1>
+      <span style="font-size: 13px; color: #5B5F73">AE · 클라이언트 리퀘스트를 팀에 배정하고, 포스팅과 이슈를 챙겨 Monthly Report로 정리합니다.</span>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <sc-for list="{{subs}}" as="s" hint-placeholder-count="6">
+        <sc-if value="{{s.active}}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{s.pick}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #3533A8; background: #3533A8; color: #FFFFFF; font-size: 13px; font-weight: 500">{{s.label}} <span style="opacity: .8">{{s.count}}</span></button>
+        </sc-if>
+        <sc-if value="{{s.inactive}}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{s.pick}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #E2E3EC; background: #FFFFFF; color: #15172B; font-size: 13px">{{s.label}} <span style="color: #5B5F73">{{s.count}}</span></button>
+        </sc-if>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{v.req}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px">
+          <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5B5F73">오픈 리퀘스트</span><span style="font-size: 24px; font-weight: 700">3건</span></div>
+          <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5B5F73">딜레이</span><span style="font-size: 24px; font-weight: 700; color: #B42318">1건</span></div>
+          <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5B5F73">이번 주 클로즈</span><span style="font-size: 24px; font-weight: 700">1건</span></div>
+        </div>
+        <div style="border-radius: 12px; background: #ECEBFA; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+          <span style="font-size: 13px; flex-grow: 1">10.24 Meeting Note에서 뽑은 리퀘스트 후보 2건이 있어요. 확인 후 등록하세요.</span>
+          <button style="height: 34px; padding: 0 14px; border-radius: 10px; border: 0; background: #3533A8; color: #FFFFFF; font-size: 13px; font-weight: 500">후보 보기</button>
+          <button style="height: 34px; padding: 0 14px; border-radius: 10px; border: 1px solid #C9C8EE; background: #FFFFFF; color: #3533A8; font-size: 13px">+ 리퀘스트 등록</button>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; overflow-x: auto">
+          <div style="min-width: 900px">
+            <div style="display: grid; grid-template-columns: 80px 1fr 80px 90px 80px 70px 100px; gap: 12px; padding: 12px 20px; background: #F1F2F7; font-size: 12px; font-weight: 700; color: #5B5F73">
+              <span>접수</span><span>리퀘스트</span><span>채널</span><span>담당</span><span>데드라인</span><span>우선순위</span><span>상태</span>
+            </div>
+            <sc-for list="{{reqs}}" as="r" hint-placeholder-count="4">
+              <div style="display: grid; grid-template-columns: 80px 1fr 80px 90px 80px 70px 100px; gap: 12px; align-items: center; padding: 14px 20px; border-top: 1px solid #E2E3EC; font-size: 13px">
+                <span style="color: #5B5F73">{{r.date}}</span>
+                <span style="font-weight: 500">{{r.text}}</span>
+                <span style="color: #5B5F73">{{r.via}}</span>
+                <span><span style="padding: 3px 8px; border-radius: 6px; background: #ECEBFA; color: #2D2B8F; font-size: 12px">{{r.who}}</span></span>
+                <span style="color: {{r.dueColor}}">{{r.due}}</span>
+                <span style="color: {{r.urgColor}}; font-weight: 500">{{r.urg}}</span>
+                <span><span style="padding: 4px 10px; border-radius: 12px; background: {{r.stSoft}}; color: {{r.stColor}}; font-size: 12px; font-weight: 500">{{r.status}}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5B5F73">담당을 지정하면 해당 팀 탭의 My Tasks에 바로 올라가고, 데드라인이 지나면 Overview의 딜레이에 합산됩니다.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{v.issue}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <button aria-label="이전 달" style="width: 36px; height: 36px; border-radius: 10px; border: 1px solid #E2E3EC; background: #FFFFFF; color: #5B5F73">‹</button>
+          <span style="font-size: 15px; font-weight: 700; padding: 0 6px">2026년 10월</span>
+          <button aria-label="다음 달" style="width: 36px; height: 36px; border-radius: 10px; border: 1px solid #E2E3EC; background: #FFFFFF; color: #5B5F73">›</button>
+          <div style="width: 1px; height: 22px; background: #E2E3EC; margin: 0 6px"></div>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; background: #15172B; color: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">All 3</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">일정 딜레이 1</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">소재 리젝 1</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">성과 이상 1</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">매체 정책·계정 0</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">클라이언트 클레임 0</span>
+          <div style="flex-grow: 1"></div>
+          <button style="height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: #3533A8; color: #FFFFFF; font-size: 13px; font-weight: 500">+ 이슈 로그</button>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; overflow-x: auto">
+          <div style="min-width: 900px">
+            <div style="display: grid; grid-template-columns: 70px 110px 1fr 1fr 90px; gap: 12px; padding: 12px 20px; background: #F1F2F7; font-size: 12px; font-weight: 700; color: #5B5F73">
+              <span>발생</span><span>유형</span><span>내용 · 영향</span><span>조치 · 재발 방지</span><span>상태</span>
+            </div>
+            <sc-for list="{{issues}}" as="i" hint-placeholder-count="3">
+              <div style="display: grid; grid-template-columns: 70px 110px 1fr 1fr 90px; gap: 12px; align-items: start; padding: 14px 20px; border-top: 1px solid #E2E3EC; font-size: 13px">
+                <span style="color: #5B5F73">{{i.date}}</span>
+                <span style="font-weight: 500">{{i.type}}</span>
+                <span>{{i.text}}</span>
+                <span style="color: #3A3D52">{{i.fix}}</span>
+                <span><span style="padding: 4px 10px; border-radius: 12px; background: {{i.stSoft}}; color: {{i.stColor}}; font-size: 12px; font-weight: 500">{{i.status}}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px">
+          <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 12px; font-weight: 700; color: #3533A8">피드백 룰 후보</span>
+            <span style="font-size: 14px; font-weight: 500">"Meta 소재는 이미지 속 텍스트를 최소화한다"</span>
+            <span style="font-size: 12px; color: #5B5F73">같은 사유의 리젝이 반복되면 후보로 제안됩니다. 대표가 컨펌한 룰만 이후 작업에 적용돼요.</span>
+            <div style="display: flex; gap: 8px; margin-top: 4px">
+              <button style="height: 34px; padding: 0 14px; border-radius: 10px; border: 0; background: #3533A8; color: #FFFFFF; font-size: 13px; font-weight: 500">룰로 컨펌</button>
+              <button style="height: 34px; padding: 0 14px; border-radius: 10px; border: 1px solid #E2E3EC; background: #FFFFFF; color: #15172B; font-size: 13px">보류</button>
+            </div>
+          </div>
+          <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 12px; font-weight: 700; color: #3533A8">Monthly Report 연동</span>
+            <span style="font-size: 14px; font-weight: 500">10월 이슈 3건이 Monthly Report의 Issue 섹션에 들어갑니다.</span>
+            <span style="font-size: 12px; color: #5B5F73">해결 1 · 조치 중 1 · 미해결 1</span>
+            <div style="display: flex; gap: 8px; margin-top: 4px">
+              <button onClick="{{goReport}}" style="height: 34px; padding: 0 14px; border-radius: 10px; border: 1px solid #C9C8EE; background: #FFFFFF; color: #3533A8; font-size: 13px; font-weight: 500">Monthly Report 보기 ›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{v.cal}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <div style="display: flex; border-radius: 9px; background: #E9EAF1; padding: 3px; gap: 2px">
+            <button style="height: 30px; padding: 0 12px; border-radius: 7px; border: 0; background: transparent; color: #5B5F73; font-size: 12px">캘린더</button>
+            <button style="height: 30px; padding: 0 12px; border-radius: 7px; border: 0; background: #FFFFFF; color: #15172B; font-size: 12px; font-weight: 700">리스트 (포스팅 관리)</button>
+          </div>
+          <div style="width: 1px; height: 22px; background: #E2E3EC; margin: 0 6px"></div>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; background: #15172B; color: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">All</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">인스타그램</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">블로그</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">유튜브</span>
+          <div style="width: 1px; height: 22px; background: #E2E3EC; margin: 0 6px"></div>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E2E3EC; background: #FFFFFF; font-size: 12px; display: inline-flex; align-items: center">컨펌 대기 1</span>
+          <span style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #F5C9C4; background: #FDE8E6; color: #B42318; font-size: 12px; display: inline-flex; align-items: center">딜레이 1</span>
+          <div style="flex-grow: 1"></div>
+          <button style="height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: #3533A8; color: #FFFFFF; font-size: 13px; font-weight: 500">+ 포스팅 일정</button>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; overflow-x: auto">
+          <div style="min-width: 900px">
+            <div style="display: grid; grid-template-columns: 90px 100px 1fr 110px 110px 120px; gap: 12px; padding: 12px 20px; background: #F1F2F7; font-size: 12px; font-weight: 700; color: #5B5F73">
+              <span>포스팅일</span><span>채널</span><span>콘텐츠</span><span>제작</span><span>상태</span><span>포스팅 링크</span>
+            </div>
+            <sc-for list="{{posts}}" as="p" hint-placeholder-count="5">
+              <div style="display: grid; grid-template-columns: 90px 100px 1fr 110px 110px 120px; gap: 12px; align-items: center; padding: 14px 20px; border-top: 1px solid #E2E3EC; font-size: 13px">
+                <span style="color: #5B5F73">{{p.date}}</span>
+                <span>{{p.ch}}</span>
+                <span style="font-weight: 500">{{p.title}}</span>
+                <span style="color: #5B5F73">{{p.maker}}</span>
+                <span><span style="padding: 4px 10px; border-radius: 12px; background: {{p.stSoft}}; color: {{p.stColor}}; font-size: 12px; font-weight: 500">{{p.status}}</span></span>
+                <span style="color: {{p.linkColor}}">{{p.link}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5B5F73">링크를 등록하면 Performance 탭의 콘텐츠 성과 수집 대상에 들어갑니다. 포스팅일이 지났는데 링크가 없으면 딜레이로 표시돼요.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{v.other}}" hint-placeholder-val="{{ false }}">
+      <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 56px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+        <span style="font-size: 15px; font-weight: 700">{{otherTitle}}</span>
+        <span style="font-size: 13px; color: #5B5F73">{{otherDesc}}</span>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sub: 2 };
+  }
+  renderVals() {
+    var self = this;
+    var S = {
+      ok: ['#13784F', '#E3F4EC'], warn: ['#8A5300', '#FDF1DC'], late: ['#B42318', '#FDE8E6'], info: ['#2D2B8F', '#ECEBFA'], gray: ['#5B5F73', '#EEEFF4']
+    };
+    var defs = [
+      { label: 'Brief', count: '', title: 'Brief', desc: '클라이언트 브리프를 정리하고 캠페인 목표·예산·일정을 확정합니다.' },
+      { label: 'Content Calendar', count: '5' },
+      { label: 'Client Request', count: '4' },
+      { label: 'Issue Log', count: '3' },
+      { label: 'Meeting Note', count: '', title: 'Meeting Note', desc: '미팅 내용을 정리하고 액션 아이템을 리퀘스트 후보로 뽑습니다.' },
+      { label: 'Monthly Report', count: '', title: 'Monthly Report', desc: '포스팅 실적 · 리퀘스트 처리 · 이슈 · 퍼포먼스 요약을 월 단위로 묶어 클라이언트에 보고합니다.' }
+    ];
+    var subs = defs.map(function (d, i) {
+      return { label: d.label, count: d.count, active: i === self.state.sub, inactive: i !== self.state.sub, pick: function () { self.setState({ sub: i }); } };
+    });
+    var mk = function (k) { return S[k]; };
+    var reqs = [
+      { date: '10.23', text: '상세페이지 가격 표기 수정', via: '메일', who: 'CW', due: '10.24', late: true, urg: 'High', status: '딜레이', s: 'late' },
+      { date: '10.24', text: '11월 프로모션 배너 세로형 사이즈 추가', via: '카톡', who: 'AD', due: '10.29', urg: 'Normal', status: '진행 중', s: 'info' },
+      { date: '10.24', text: '리뷰 콘텐츠 톤을 더 캐주얼하게', via: '미팅', who: 'CW', due: '10.30', urg: 'Normal', status: '배정', s: 'gray' },
+      { date: '10.22', text: '주간 리포트에 GA 전환 지표 추가', via: '미팅', who: 'MP', due: '10.28', urg: 'Normal', status: '클로즈', s: 'ok' }
+    ].map(function (r) { var c = mk(r.s); return Object.assign({}, r, { stColor: c[0], stSoft: c[1], dueColor: r.late ? '#B42318' : '#15172B', urgColor: r.urg === 'High' ? '#B42318' : '#5B5F73' }); });
+    var issues = [
+      { date: '10.08', type: '소재 리젝', text: 'Meta 광고 소재가 이미지 속 텍스트 비율로 검수 리젝', fix: '텍스트 축소 후 재검수 통과 · 룰 후보 등록', status: '해결', s: 'ok' },
+      { date: '10.15', type: '일정 딜레이', text: '촬영 장소 섭외 지연으로 촬영 1주 연기', fix: '대체 장소 확정, 게시 일정 재협의 중', status: '조치 중', s: 'warn' },
+      { date: '10.21', type: '성과 이상', text: '검색광고 CPC 급등', fix: '[원인 확인 전]', status: '미해결', s: 'late' }
+    ].map(function (r) { var c = mk(r.s); return Object.assign({}, r, { stColor: c[0], stSoft: c[1] }); });
+    var posts = [
+      { date: '10.24 (금)', ch: '인스타그램', title: '브랜드 무드 릴스', maker: 'PD', status: '딜레이', s: 'late', link: '링크 없음', lc: '#B42318' },
+      { date: '10.27 (월)', ch: '인스타그램', title: '가을 신제품 카드뉴스', maker: 'CW · AD', status: '포스팅 완료', s: 'ok', link: '링크 등록됨', lc: '#13784F' },
+      { date: '10.28 (화)', ch: '블로그', title: '제품 리뷰 포스팅', maker: 'CW', status: '컨펌 대기', s: 'warn', link: '—', lc: '#5B5F73' },
+      { date: '10.29 (수)', ch: '인스타그램', title: '11월 프로모션 예고', maker: 'CW · AD', status: '포스팅 예정', s: 'gray', link: '—', lc: '#5B5F73' },
+      { date: '10.31 (금)', ch: '유튜브', title: '브랜드 필름 쇼츠', maker: 'PD', status: '포스팅 예정', s: 'gray', link: '—', lc: '#5B5F73' }
+    ].map(function (r) { var c = mk(r.s); return Object.assign({}, r, { stColor: c[0], stSoft: c[1], linkColor: r.lc }); });
+    var cur = defs[this.state.sub];
+    var i = this.state.sub;
+    return {
+      subs: subs, reqs: reqs, issues: issues, posts: posts,
+      v: { req: i === 2, issue: i === 3, cal: i === 1, other: i === 0 || i === 4 || i === 5 },
+      otherTitle: cur.title || '', otherDesc: cur.desc || '',
+      goReport: function () { self.setState({ sub: 5 }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -27,7 +27,8 @@ def _write_new(path, text, created, skipped):
         skipped.append(str(path.relative_to(common.root())))
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8", newline="\n")
+    with open(path, "w", encoding="utf-8", newline="\n") as f:  # Path.write_text(newline=) 는 Python 3.10+
+        f.write(text)
     created.append(str(path.relative_to(common.root())))
 
 

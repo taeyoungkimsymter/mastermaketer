@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>홈 역할별 요약</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Inter:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3533A8}a:hover{color:#26248A}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 1280px; display: flex; flex-wrap: wrap; background: {{t.bg}}; color: {{t.text}}; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; position: relative">
+
+  <nav aria-label="주 메뉴" style="flex: 0 0 68px; background: {{t.rail}}; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 0">
+    <div style="width: 36px; height: 36px; border-radius: 10px; background: #4B48D0; display: flex; align-items: center; justify-content: center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="7"></circle></svg>
+    </div>
+    <button aria-label="브랜드 캘린더" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #B9B8E8; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+    </button>
+    <div style="width: 28px; height: 1px; background: #34347A"></div>
+    <button aria-label="CJ 고객사" style="width: 44px; height: 44px; border-radius: 12px; border: 2px solid #8E8BF0; background: #4B48D0; color: #FFFFFF; font-weight: 700">C</button>
+    <button aria-label="코오롱 고객사" style="width: 44px; height: 44px; border-radius: 12px; border: 0; background: #2C2B63; color: #D8D7F5; font-weight: 700">코</button>
+    <button aria-label="새 고객사 추가" style="width: 44px; height: 44px; border-radius: 12px; border: 1px dashed #4A4A90; background: transparent; color: #B9B8E8; font-size: 20px">+</button>
+    <div style="flex-grow: 1"></div>
+    <button aria-label="{{themeLabel}}" onClick="{{toggleDark}}" style="width: 44px; height: 44px; border-radius: 10px; border: 0; background: #2C2B63; color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+      <sc-if value="{{dark}}" hint-placeholder-val="{{ false }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      </sc-if>
+      <sc-if value="{{light}}" hint-placeholder-val="{{ true }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+      </sc-if>
+    </button>
+  </nav>
+
+  <aside style="flex: 0 0 248px; background: {{t.surface}}; border-right: 1px solid {{t.border}}; padding: 22px 16px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="client-search" style="font-size: 13px; font-weight: 700">Accounts</label>
+      <input id="client-search" type="search" placeholder="어카운트 검색" style="height: 38px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface2}}; color: {{t.text}}; padding: 0 12px; font-size: 13px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <p style="margin: 0 0 4px; font-size: 12px; color: {{t.muted}}">Pinned</p>
+      <button style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: {{t.accentSoft}}; color: {{t.text}}; text-align: left">
+        <span style="width: 26px; height: 26px; border-radius: 8px; background: #4B48D0; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">C</span>
+        <span style="flex-grow: 1; font-weight: 700; font-size: 13px">CJ</span>
+        <span style="min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: {{t.btn}}; color: #FFFFFF; font-size: 11px; line-height: 18px; text-align: center; box-sizing: border-box">5</span>
+      </button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <p style="margin: 0 0 4px; font-size: 12px; color: {{t.muted}}">Active</p>
+      <button style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: {{t.text}}; text-align: left">
+        <span style="width: 26px; height: 26px; border-radius: 8px; background: #8C7A2E; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">코</span>
+        <span style="flex-grow: 1; font-size: 13px">코오롱</span>
+      </button>
+    </div>
+    <div style="flex-grow: 1"></div>
+    <button style="height: 44px; border-radius: 10px; border: 1px dashed {{t.border}}; background: transparent; color: {{t.muted}}; font-size: 13px">+ New Account</button>
+  </aside>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 26px 40px 48px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px">
+      <div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: {{t.muted}}">
+          <a href="Agency.dc.html" style="color: {{t.muted}}; text-decoration: none">‹ All Accounts</a>
+          <span aria-hidden="true">›</span>
+          <span style="font-size: 18px; font-weight: 700; color: {{t.text}}">CJ (공개자료 기반 데모)</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; background: {{t.warnSoft}}; color: {{t.warn}}; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif"><span style="width: 6px; height: 6px; border-radius: 3px; background: {{t.warn}}"></span>At Risk</span>
+          <span style="height: 22px; padding: 0 8px; border-radius: 6px; border: 1px dashed {{t.border}}; color: {{t.muted}}; font-size: 11px; display: inline-flex; align-items: center">예시 데이터</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: {{t.muted}}">
+          <span>Retainer</span><span>Phase · <b style="color: {{t.text}}; font-weight: 500">Concept</b> (2/6)</span><span>demo-cj</span><span>Memo ✎</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <button style="height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: {{t.btn}}; color: #FFFFFF; font-size: 13px; font-weight: 500">컨펌 대기 5</button>
+        <button onClick="{{toggleDark}}" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font-size: 13px">{{themeLabel}}</button>
+        <button aria-label="더보기 (피드백 규칙·설정)" style="width: 36px; height: 36px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.muted}}">⋯</button>
+      </div>
+    </header>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid {{t.border}}">
+      <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="7">
+        <sc-if value="{{tab.active}}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{tab.pick}}" style="height: 44px; padding: 0 14px; border: 0; border-bottom: 2px solid {{t.accent}}; margin-bottom: -1px; background: transparent; color: {{t.accent}}; font-size: 14px; font-weight: 700">{{tab.label}}</button>
+        </sc-if>
+        <sc-if value="{{tab.inactive}}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{tab.pick}}" style="height: 44px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: {{t.muted}}; font-size: 14px; font-weight: 500">{{tab.label}}</button>
+        </sc-if>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{showHome}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700; font-family: Inter, 'Noto Sans KR', sans-serif">Overview</h1>
+          <span style="font-size: 13px; color: {{t.muted}}">어카운트 팀의 진행 상황을 한눈에 보고, 올라온 건을 바로 컨펌합니다.</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+          <div style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; color: {{t.muted}}">컨펌 대기</span>
+            <span style="font-size: 26px; font-weight: 700; color: {{t.accent}}">5건</span>
+            <span style="font-size: 12px; color: {{t.muted}}">AE 1 · AP 1 · CW 2 · AD 1</span>
+          </div>
+          <div style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; color: {{t.muted}}">딜레이</span>
+            <span style="font-size: 26px; font-weight: 700; color: {{t.late}}">2건</span>
+            <span style="font-size: 12px; color: {{t.muted}}">클라이언트 리퀘스트 1 · 포스팅 1</span>
+          </div>
+          <div style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; color: {{t.muted}}">이번 주 포스팅</span>
+            <span style="font-size: 26px; font-weight: 700">1 / 5</span>
+            <div style="height: 6px; border-radius: 3px; background: {{t.surface2}}; overflow: hidden"><div style="width: 20%; height: 6px; background: {{t.btn}}"></div></div>
+          </div>
+          <div style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; color: {{t.muted}}">이번 주 집행 금액</span>
+            <span style="font-size: 26px; font-weight: 700">—</span>
+            <span style="font-size: 12px; color: {{t.muted}}">매체 연동 또는 CSV 필요</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 700; font-family: Inter, sans-serif">Team Status</h2>
+          <span style="font-size: 12px; color: {{t.muted}}">카드를 열면 해당 팀 탭으로, 컨펌 배지를 누르면 오른쪽 패널에서 바로 컨펌합니다.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px">
+          <sc-for list="{{roles}}" as="r" hint-placeholder-count="6">
+            <section style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span style="width: 34px; height: 34px; border-radius: 10px; background: {{t.accentSoft}}; color: {{t.accent}}; font-family: Inter, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .04em; display: flex; align-items: center; justify-content: center">{{r.short}}</span>
+                <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+                  <span style="font-size: 15px; font-weight: 700">{{r.name}}</span>
+                  <span style="font-size: 12px; color: {{t.muted}}">{{r.ko}} · 담당 [이름]</span>
+                </div>
+                <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: {{r.stSoft}}; color: {{r.stColor}}; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">{{r.status}}</span>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+                <sc-for list="{{r.metrics}}" as="m" hint-placeholder-count="3">
+                  <div style="border-radius: 10px; background: {{t.surface2}}; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px">
+                    <span style="font-size: 11px; color: {{t.muted}}">{{m.label}}</span>
+                    <span style="font-size: 17px; font-weight: 700">{{m.value}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px">
+                <span style="color: {{t.muted}}; flex-shrink: 0">다음</span>
+                <span>{{r.next}}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; border-top: 1px solid {{t.border}}; padding-top: 12px">
+                <sc-if value="{{r.hasApproval}}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{r.openDrawer}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 0; background: {{t.btn}}; color: #FFFFFF; font-size: 12px; font-weight: 500">컨펌 {{r.approvalCount}}건</button>
+                </sc-if>
+                <sc-if value="{{r.noApproval}}" hint-placeholder-val="{{ true }}">
+                  <span style="font-size: 12px; color: {{t.muted}}">컨펌 대기 없음</span>
+                </sc-if>
+                <div style="flex-grow: 1"></div>
+                <button onClick="{{r.goTab}}" style="height: 32px; padding: 0 10px; border: 0; background: transparent; color: {{t.accent}}; font-size: 13px; font-weight: 500">Open ›</button>
+              </div>
+            </section>
+          </sc-for>
+        </div>
+
+        <section style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: baseline; gap: 10px">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 700; font-family: Inter, sans-serif">This Week</h2>
+            <span style="font-size: 12px; color: {{t.muted}}">10.26 ~ 11.01</span>
+          </div>
+          <div style="overflow-x: auto">
+            <div style="display: grid; grid-template-columns: repeat(7, minmax(120px, 1fr)); gap: 8px; min-width: 860px">
+              <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+                <div style="border-radius: 10px; background: {{t.surface2}}; padding: 10px; min-height: 130px; display: flex; flex-direction: column; gap: 6px">
+                  <span style="font-size: 12px; font-weight: 700; color: {{t.muted}}">{{d.label}}</span>
+                  <sc-for list="{{d.items}}" as="it" hint-placeholder-count="1">
+                    <div style="border-radius: 8px; background: {{t.surface}}; border: 1px solid {{t.border}}; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px">
+                      <span style="font-size: 11px; font-weight: 700; color: {{t.accent}}">{{it.role}}</span>
+                      <span style="font-size: 12px">{{it.text}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showOther}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 700">{{cur.label}}</h1>
+          <span style="font-size: 13px; color: {{t.muted}}">{{cur.desc}}</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-for list="{{subs}}" as="s" hint-placeholder-count="3">
+            <sc-if value="{{s.active}}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{s.pick}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.btn}}; background: {{t.btn}}; color: #FFFFFF; font-size: 13px; font-weight: 500">{{s.label}}</button>
+            </sc-if>
+            <sc-if value="{{s.inactive}}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{s.pick}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font-size: 13px">{{s.label}}</button>
+            </sc-if>
+          </sc-for>
+        </div>
+        <div style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 14px; padding: 56px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+          <span style="font-size: 15px; font-weight: 700">{{curSub}}</span>
+          <span style="font-size: 13px; color: {{t.muted}}">모든 팀 탭은 같은 틀입니다: My Tasks(배정된 리퀘스트) · 작업물 · 컨펌 요청.</span>
+          <sc-if value="{{cur.hasBoard}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 13px; color: {{t.accent}}; font-weight: 500">{{cur.board}}</span>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{drawerOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; top: 0; right: 0; bottom: 0; width: 400px; max-width: 100%; background: {{t.surface}}; border-left: 1px solid {{t.border}}; box-shadow: -12px 0 32px rgba(10,10,30,.18); padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="font-size: 16px; font-weight: 700; flex-grow: 1">{{drawer.name}} · 컨펌 대기</span>
+        <button aria-label="패널 닫기" onClick="{{closeDrawer}}" style="width: 36px; height: 36px; border-radius: 10px; border: 1px solid {{t.border}}; background: transparent; color: {{t.muted}}">✕</button>
+      </div>
+      <sc-for list="{{drawer.items}}" as="a" hint-placeholder-count="2">
+        <div style="border: 1px solid {{t.border}}; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 14px; font-weight: 700">{{a.title}}</span>
+          <span style="font-size: 12px; color: {{t.muted}}">{{a.meta}}</span>
+          <div style="height: 90px; border-radius: 8px; background: {{t.surface2}}; display: flex; align-items: center; justify-content: center; font-size: 12px; color: {{t.muted}}">[결과물 미리보기]</div>
+          <div style="display: flex; gap: 8px">
+            <button style="flex: 1; height: 36px; border-radius: 10px; border: 0; background: {{t.btn}}; color: #FFFFFF; font-size: 13px; font-weight: 500">컨펌</button>
+            <button style="flex: 1; height: 36px; border-radius: 10px; border: 1px solid {{t.border}}; background: transparent; color: {{t.text}}; font-size: 13px">수정 요청</button>
+          </div>
+        </div>
+      </sc-for>
+      <span style="font-size: 12px; color: {{t.muted}}">AI 검수 통과 ≠ 대표 컨펌 ≠ 법적 적합성 확정</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkMode":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1280}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { dark: null, tab: 0, sub: 0, drawer: -1 };
+  }
+  renderVals() {
+    var self = this;
+    var dark = this.state.dark === null ? !!(this.props.darkMode) : this.state.dark;
+    var L = { bg: '#F4F5F9', surface: '#FFFFFF', surface2: '#F1F2F7', border: '#E2E3EC', text: '#15172B', muted: '#5B5F73', accent: '#3533A8', accentSoft: '#ECEBFA', btn: '#3533A8', rail: '#1B1A4B', ok: '#13784F', okSoft: '#E3F4EC', warn: '#8A5300', warnSoft: '#FDF1DC', late: '#B42318', lateSoft: '#FDE8E6', none: '#5B5F73', noneSoft: '#EEEFF4' };
+    var D = { bg: '#0E0F1C', surface: '#171829', surface2: '#1F2136', border: '#2B2D45', text: '#ECEDF5', muted: '#A3A6BC', accent: '#A9A6FF', accentSoft: '#25244D', btn: '#4B48D0', rail: '#0A0A18', ok: '#5FD3A2', okSoft: '#16332A', warn: '#F2B45A', warnSoft: '#3A2C14', late: '#FF8A80', lateSoft: '#3B1D1F', none: '#A3A6BC', noneSoft: '#262840' };
+    var t = dark ? D : L;
+    var st = function (k) { return { ok: ['On Track', t.ok, t.okSoft], warn: ['At Risk', t.warn, t.warnSoft], late: ['Delayed', t.late, t.lateSoft], none: ['Setup', t.none, t.noneSoft] }[k]; };
+    var tabDefs = [
+      { label: 'Overview' },
+      { label: 'Account', desc: 'AE · 클라이언트 커뮤니케이션과 어카운트 운영을 맡습니다.', subs: ['Brief', 'Content Calendar', 'Client Request', 'Issue Log', 'Meeting Note', 'Monthly Report'], board: '옆의 "2. Account 탭" 시안에서 자세히 볼 수 있어요.' },
+      { label: 'Strategy', desc: 'AP · 시장과 경쟁사를 읽고 컨셉 방향을 잡습니다.', subs: ['Reference Board', 'Competitor Watch', 'Keyword Insight', 'Concept'] },
+      { label: 'Copy', desc: 'CW · 카피와 스크립트를 쓰고 컨펌을 요청합니다.', subs: ['Copy Options', 'Detail Page', 'Script'] },
+      { label: 'Art', desc: 'AD · 키비주얼과 광고 소재, 리사이징을 맡습니다.', subs: ['Key Visual', 'Ad Creative', 'Resizing', 'Brand Guide'] },
+      { label: 'Film', desc: 'PD · 콘티부터 슈팅·편집까지 영상 프로덕션을 관리합니다.', subs: ['Storyboard', 'Shooting Plan', 'On-set', 'Post-production'] },
+      { label: 'Performance', desc: 'MP · 매체 성과를 조회·분석합니다. 예산 변경이나 집행은 하지 않습니다.', subs: ['Media Report', 'Search Keyword', 'Content Performance', 'Performance Report'], board: '아래 "3. Performance 탭" 시안에서 자세히 볼 수 있어요.' }
+    ];
+    var tabs = tabDefs.map(function (d, i) {
+      return { label: d.label, active: i === self.state.tab, inactive: i !== self.state.tab, pick: function () { self.setState({ tab: i, sub: 0, drawer: -1 }); } };
+    });
+    var roleDefs = [
+      { tab: 1, name: 'Account Executive', short: 'AE', ko: '어카운트', s: 'warn', metrics: [['오픈 리퀘스트', '3'], ['이번 주 포스팅', '1/5'], ['오픈 이슈', '2']], next: '블로그 리뷰 포스팅 클라이언트 컨펌 대기 (10.28)', approvals: [{ title: '10월 Monthly Report 초안', meta: 'AE · 10.24 요청' }] },
+      { tab: 2, name: 'Account Planner', short: 'AP', ko: '전략', s: 'ok', metrics: [['컨셉', '3안 제시'], ['경쟁사 신규 소재', '[N]'], ['레퍼런스', '[N]']], next: '컨셉 3안 중 1안 픽스 필요', approvals: [{ title: '11월 캠페인 컨셉 3안', meta: 'AP · 10.23 요청' }] },
+      { tab: 3, name: 'Copywriter', short: 'CW', ko: '카피', s: 'ok', metrics: [['작성 중', '2'], ['컨펌 요청', '2'], ['픽스', '5']], next: '상세페이지 카피 D-2', approvals: [{ title: '상세페이지 카피 v2', meta: 'CW · 10.24 요청' }, { title: '인스타 카드뉴스 카피', meta: 'CW · 10.24 요청' }] },
+      { tab: 4, name: 'Art Director', short: 'AD', ko: '아트', s: 'warn', metrics: [['시안', '3'], ['리사이징', '8'], ['리젝', '1']], next: '메인 KV 수정 시안 금요일 전달', approvals: [{ title: '11월 프로모션 메인 KV', meta: 'AD · 10.24 요청' }] },
+      { tab: 5, name: 'Producer', short: 'PD', ko: '필름', s: 'ok', metrics: [['슈팅', 'D-4'], ['콘티', '컨펌'], ['편집', '대기']], next: '슈팅 콜시트 픽스 필요', approvals: [] },
+      { tab: 6, name: 'Media & Performance', short: 'MP', ko: '퍼포먼스', s: 'none', metrics: [['집행 금액', '—'], ['CTR', '—'], ['ROAS', '—']], next: '매체 연동 또는 리포트 CSV 업로드', approvals: [] }
+    ];
+    var roles = roleDefs.map(function (r, i) {
+      var s = st(r.s);
+      return {
+        name: r.name, short: r.short, ko: r.ko, status: s[0], stColor: s[1], stSoft: s[2],
+        metrics: r.metrics.map(function (m) { return { label: m[0], value: m[1] }; }),
+        next: r.next, approvalCount: r.approvals.length, hasApproval: r.approvals.length > 0, noApproval: r.approvals.length === 0,
+        openDrawer: function () { self.setState({ drawer: i }); },
+        goTab: function () { self.setState({ tab: r.tab, sub: 0, drawer: -1 }); }
+      };
+    });
+    var week = [
+      { label: '월 10.26', items: [{ role: 'AE', text: '정기 클라이언트 미팅' }] },
+      { label: '화 10.27', items: [{ role: 'CW', text: '상세페이지 카피 마감' }] },
+      { label: '수 10.28', items: [{ role: 'AE', text: '블로그 리뷰 포스팅' }] },
+      { label: '목 10.29', items: [{ role: 'PD', text: '브랜드 필름 슈팅' }, { role: 'AE', text: '인스타 카드뉴스 포스팅' }] },
+      { label: '금 10.30', items: [{ role: 'AD', text: 'KV 수정 시안 전달' }, { role: 'MP', text: '주간 퍼포먼스 리포트' }] },
+      { label: '토 10.31', items: [] },
+      { label: '일 11.01', items: [] }
+    ];
+    var cd = tabDefs[this.state.tab];
+    var subs = (cd.subs || []).map(function (s, i) {
+      return { label: s, active: i === self.state.sub, inactive: i !== self.state.sub, pick: function () { self.setState({ sub: i }); } };
+    });
+    var dr = this.state.drawer >= 0 ? roleDefs[this.state.drawer] : null;
+    return {
+      t: t, dark: dark, light: !dark,
+      themeLabel: dark ? '라이트 모드' : '다크 모드',
+      toggleDark: function () { self.setState({ dark: !dark }); },
+      tabs: tabs, roles: roles, week: week, subs: subs,
+      showHome: this.state.tab === 0, showOther: this.state.tab !== 0,
+      cur: { label: cd.label, desc: cd.desc || '', hasBoard: !!cd.board, board: cd.board || '' },
+      curSub: (cd.subs || [''])[this.state.sub] || '',
+      drawerOpen: !!dr,
+      drawer: dr ? { name: dr.name, items: dr.approvals } : { name: '', items: [] },
+      closeDrawer: function () { self.setState({ drawer: -1 }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

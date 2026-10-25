@@ -4,38 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="token" content="__TOKEN__">
-<title>AI 주니어 팀</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%233b4cca'/%3E%3Cpath d='M9 21l5-10 3 6 2-3 4 7' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>Team</title>
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<script>try{var t=localStorage.getItem("theme");document.documentElement.dataset.theme=t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
 <div id="app" class="app">
-  <aside class="side" id="side">
-    <div class="brand">
-      <span class="logo" aria-hidden="true"></span>
-      <div><b>AI 주니어 팀</b><small>대행사 마케터용</small></div>
-    </div>
-    <button class="client-card" id="clientCard" type="button" aria-label="고객사 전환"></button>
-    <nav id="nav" aria-label="메뉴"></nav>
-    <div class="side-foot">
-      <div class="conn" id="conn"></div>
-      <p>AI 검수 통과 ≠ 사용자 승인 ≠ 법적 적합성 확정</p>
-    </div>
+  <nav class="rail" id="rail" aria-label="고객사와 홈"></nav>
+  <aside class="side" aria-label="어카운트 목록">
+    <div class="acct-list" id="acctList"></div>
+    <div class="side-foot"><p>AI 검수 통과 ≠ 대표 컨펌 ≠ 법적 적합성 확정</p></div>
   </aside>
 
   <main class="main">
-    <header class="top">
-      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="메뉴 열기">☰</button>
-      <div class="crumb" id="crumb"></div>
-      <div class="top-r" id="topR"></div>
-    </header>
+    <div class="topline"><span id="topR"></span></div>
+    <div class="content acct-head" id="acctHead"></div>
     <div class="content" id="view"></div>
   </main>
 </div>
 
+<aside class="drawer" id="drawer" role="dialog" aria-labelledby="drTitle" hidden></aside>
+<aside class="drawer wide" id="detail" role="dialog" aria-labelledby="dtTitle" hidden></aside>
 <div class="scrim" id="scrim" hidden></div>
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true"></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
+<script src="/buddy-sprite.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

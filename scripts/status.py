@@ -73,7 +73,7 @@ def require(client, project, min_stage):
     return st
 
 
-def set_deliverable(client, project, filename, state, by=None):
+def set_deliverable(client, project, filename, state, by=None, note=None):
     if state not in TRANSITIONS:
         raise AgencyError(f"알 수 없는 상태 '{state}'.")
     st = load(client, project)
@@ -86,6 +86,8 @@ def set_deliverable(client, project, filename, state, by=None):
     if state == "approved" and not (by and by.strip()):
         raise AgencyError("approved 는 사용자(승인 담당자) 이름이 필요합니다. AI 검수 통과는 승인이 아닙니다.")
     st["deliverables"][filename] = {"state": state, "by": by or "ai-review", "at": common.now_kst().isoformat()}
+    if note:
+        st["deliverables"][filename]["note"] = note
     save(client, project, st)
     return st
 

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>왼쪽 탭과 역할 아이콘</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=Inter:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-wrap: wrap; background: #F4F5F9; color: #15172B; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px">
+
+  <nav aria-label="주 메뉴" style="flex: 0 0 68px; background: #1B1A4B; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 0">
+    <div style="width: 36px; height: 36px; border-radius: 10px; background: #4B48D0; display: flex; align-items: center; justify-content: center; margin-bottom: 8px">
+      <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><polyline points="14,46 14,22 25,33 32,17 39,33 50,22 50,46" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>
+    </div>
+    <button aria-label="All Accounts" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: #2F2E72; color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+    </button>
+    <button aria-label="Calendar" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #B9B8E8; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+    </button>
+  </nav>
+
+  <aside aria-label="어카운트 탭" style="flex: 0 0 264px; background: #FFFFFF; border-right: 1px solid #E2E3EC; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px">
+    <button style="display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 12px; border: 1px solid #E2E3EC; border-radius: 12px; background: #FFFFFF; color: #15172B; text-align: left; margin-bottom: 4px">
+      <span style="width: 32px; height: 32px; border-radius: 9px; background: #4B48D0; color: #FFFFFF; font-family: Inter, sans-serif; font-weight: 700; display: flex; align-items: center; justify-content: center">C</span>
+      <span style="flex-grow: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 700">CJ</span><span style="font-size: 11px; color: #B42318; font-weight: 500">● Delayed</span></span>
+      <span aria-hidden="true" style="color: #5B5F73">⌄</span>
+    </button>
+    <span style="font-size: 11px; color: #5B5F73; padding: 10px 8px 4px; font-family: Inter, sans-serif; font-weight: 600; letter-spacing: .06em">TEAM</span>
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7">
+      <sc-if value="{{t.active}}" hint-placeholder-val="{{ false }}">
+        <button style="position: relative; display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 10px; border: 0; border-radius: 12px; background: #ECEBFA; color: #15172B; text-align: left">
+          <span style="position: absolute; left: -14px; top: 12px; width: 4px; height: 32px; border-radius: 0 4px 4px 0; background: #3533A8"></span>
+          <span style="width: 40px; height: 40px; border-radius: 10px; background: {{t.tile}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+            <svg width="28" height="28" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"><sc-for list="{{t.icon}}" as="p" hint-placeholder-count="60"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for></svg>
+          </span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-family: Inter, 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700; color: #3533A8">{{t.name}}</span><span style="font-size: 11px; color: #5B5F73">{{t.sub}}</span></span>
+          <sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: {{t.badgeBg}}; color: #FFFFFF; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; box-sizing: border-box">{{t.badge}}</span></sc-if>
+        </button>
+      </sc-if>
+      <sc-if value="{{t.inactive}}" hint-placeholder-val="{{ true }}">
+        <button style="display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 10px; border: 0; border-radius: 12px; background: transparent; color: #15172B; text-align: left">
+          <span style="width: 40px; height: 40px; border-radius: 10px; background: {{t.tile}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+            <svg width="28" height="28" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"><sc-for list="{{t.icon}}" as="p" hint-placeholder-count="60"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for></svg>
+          </span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-family: Inter, 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 600">{{t.name}}</span><span style="font-size: 11px; color: #5B5F73">{{t.sub}}</span></span>
+          <sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: {{t.badgeBg}}; color: #FFFFFF; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; box-sizing: border-box">{{t.badge}}</span></sc-if>
+        </button>
+      </sc-if>
+    </sc-for>
+    <div style="flex-grow: 1"></div>
+    <span style="font-size: 11px; color: #5B5F73; padding: 0 8px; line-height: 1.5">빨간 점은 딜레이, 보라 숫자는 컨펌 대기 건수예요.</span>
+  </aside>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 28px 40px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+      <span style="font-size: 13px; color: #5B5F73">‹ All Accounts</span>
+      <span style="font-size: 20px; font-weight: 700">CJ · Overview</span>
+      <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #FDE8E6; color: #B42318; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">Delayed</span>
+      <span style="flex-grow: 1"></span>
+      <span style="height: 36px; padding: 0 14px; border-radius: 10px; background: #3533A8; color: #FFFFFF; font-size: 13px; display: inline-flex; align-items: center">컨펌 대기 0</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; max-width: 520px">
+      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B5F73"><span>Phase · <b style="color: #15172B; font-weight: 500">Brief</b></span><span>1 / 6</span></div>
+      <div style="height: 6px; border-radius: 3px; background: #E9EAF1; overflow: hidden"><div style="width: 17%; height: 6px; background: #3533A8"></div></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+      <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 18px 20px; height: 96px; box-sizing: border-box"><span style="font-size: 13px; color: #5B5F73">컨펌 대기</span></div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 18px 20px; height: 96px; box-sizing: border-box"><span style="font-size: 13px; color: #5B5F73">딜레이</span></div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 18px 20px; height: 96px; box-sizing: border-box"><span style="font-size: 13px; color: #5B5F73">이번 주 포스팅</span></div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 18px 20px; height: 96px; box-sizing: border-box"><span style="font-size: 13px; color: #5B5F73">이번 주 집행 금액</span></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px">
+      <sc-for list="{{cards}}" as="c" hint-placeholder-count="6">
+        <div style="background: #FFFFFF; border: 1px solid #E2E3EC; border-radius: 14px; padding: 16px 18px; display: flex; align-items: center; gap: 12px; height: 92px; box-sizing: border-box">
+          <span style="width: 48px; height: 48px; border-radius: 12px; background: {{c.tile}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+            <svg width="32" height="32" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"><sc-for list="{{c.icon}}" as="p" hint-placeholder-count="60"><rect x="{{p.x}}" y="{{p.y}}" width="1.02" height="1.02" fill="{{p.c}}"></rect></sc-for></svg>
+          </span>
+          <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700">{{c.name}}</span><span style="font-size: 12px; color: #5B5F73">{{c.sub}}</span></span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin: 0; font-size: 12px; color: #5B5F73">같은 픽셀 아이콘을 Overview의 Team Status 카드에도 써서, 탭과 카드가 한눈에 연결되게 해요.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  sprite(rows, pal) {
+    var out = [];
+    rows.forEach(function (r, y) { for (var x = 0; x < r.length; x++) { var c = r.charAt(x); if (c !== '.') out.push({ x: x, y: y, c: pal[c] }); } });
+    return out;
+  }
+  renderVals() {
+    var O = '#2B2140';
+    var I = {
+      home: this.sprite(['.....OO.....', '....OrrO....', '...OrrrrO...', '..OrrrrrrO..', '.OrrrrrrrrO.', 'OOOOOOOOOOOO', '.OwwwwwwwwO.', '.OwbbwwyywO.', '.OwbbwwyywO.', '.OwbbwwwwwO.', '.OwbbwwwwwO.', '.OOOOOOOOOO.'], { O: O, r: '#E2574A', w: '#FFF1D6', b: '#8A5A3C', y: '#7CC8FF' }),
+      bag: this.sprite(['............', '....OOOO....', '...O....O...', 'OOOOOOOOOOOO', 'ObbbbbbbbbbO', 'ObbbbbbbbbbO', 'ObbbbyybbbbO', 'OOOOOyyOOOOO', 'ObbbbbbbbbbO', 'ObbbbbbbbbbO', 'ObbbbbbbbbbO', 'OOOOOOOOOOOO'], { O: O, b: '#B5764A', y: '#FFD45E' }),
+      bulb: this.sprite(['....OOOO....', '...OyyyyO...', '..OyywyyyO..', '..OywyyyyO..', '..OyyyyyyO..', '..OyyyyyyO..', '...OyyyyO...', '....OyyO....', '....OggO....', '....OggO....', '.....OO.....', '............'], { O: O, y: '#FFE066', w: '#FFFFFF', g: '#9AA0B8' }),
+      pencil: this.sprite(['....OOOO....', '...OppppO...', '...OppppO...', '...OOOOOO...', '...OyYyyO...', '...OyYyyO...', '...OyYyyO...', '...OyYyyO...', '...OyYyyO...', '...OttttO...', '....OttO....', '.....kk.....'], { O: O, p: '#FF9BB5', y: '#FFC93C', Y: '#FFF3B0', t: '#F2C9A0', k: O }),
+      palette: this.sprite(['..OOOOOO....', '.OwwwwwwOO..', 'OwrrwwbbwwO.', 'OwrrwwbbwwwO', 'OwwwwwwwwwwO', 'OwggwwwOOwwO', 'OwggwwO..OwO', 'OwwwwwO..OwO', '.OwyywwOOwO.', '.OwyywwwwO..', '..OOwwwwO...', '....OOOO....'], { O: O, w: '#FFF1D6', r: '#E2574A', b: '#5B9BFF', g: '#5DB86A', y: '#FFD45E' }),
+      clap: this.sprite(['............', 'OOOOOOOOOOOO', 'OwkkwwkkwwkO', 'OOOOOOOOOOOO', 'OkkkkkkkkkkO', 'OkwwwwwwkkkO', 'OkkkkkkkkkkO', 'OkwwwwkkkkkO', 'OkkkkkkkkkkO', 'OkkkkkkkkkkO', 'OOOOOOOOOOOO', '............'], { O: O, k: '#3A3F5C', w: '#FFFFFF' }),
+      chart: this.sprite(['............', '.........OOO', '.........OgO', '......OOOOgO', '......OyOOgO', '...OOOOyOOgO', '...ObOOyOOgO', 'OOOObOOyOOgO', 'OpOObOOyOOgO', 'OpOObOOyOOgO', 'OOOOOOOOOOOO', '............'], { O: O, g: '#5DB86A', y: '#FFD45E', b: '#5B9BFF', p: '#FF9BB5' })
+    };
+    var defs = [
+      { name: 'Overview', sub: '대표 · 한눈에 보기', icon: I.home, tile: '#FFE9E4', active: true },
+      { name: 'Account', sub: 'AE · 어카운트', icon: I.bag, tile: '#F6E7D8', badge: '●', badgeBg: '#D92D20' },
+      { name: 'Strategy', sub: 'AP · 전략', icon: I.bulb, tile: '#FFF6CC' },
+      { name: 'Copy', sub: 'CW · 카피', icon: I.pencil, tile: '#FFE6EE' },
+      { name: 'Art', sub: 'AD · 아트', icon: I.palette, tile: '#E6F1FF' },
+      { name: 'Film', sub: 'PD · 필름', icon: I.clap, tile: '#EAEAF2' },
+      { name: 'Performance', sub: 'MP · 퍼포먼스', icon: I.chart, tile: '#E3F4EC' }
+    ];
+    var tabs = defs.map(function (d) { return { name: d.name, sub: d.sub, icon: d.icon, tile: d.tile, active: !!d.active, inactive: !d.active, hasBadge: !!d.badge, badge: d.badge || '', badgeBg: d.badgeBg || '#3533A8' }; });
+    var cards = defs.slice(1).map(function (d) { return { name: d.name, sub: d.sub, icon: d.icon, tile: d.tile }; });
+    return { tabs: tabs, cards: cards };
+  }
+}
+</script>
+</body>
+</html>
