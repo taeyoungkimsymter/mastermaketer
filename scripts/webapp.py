@@ -469,7 +469,25 @@ def buddy_size():
     return v if v in BUDDY_SIZES else "small"
 
 
-def write_settings(rep_name=None, size=None):
+def dnd_conf():
+    d = read_settings()
+    return {"enabled": bool(d.get("dnd_enabled")), "start": d.get("dnd_start") or "19:00", "end": d.get("dnd_end") or "09:00"}
+
+
+def dnd_active(now):
+    """방해 금지 시간대인지(자정을 넘는 구간 포함). 꺼져 있거나 시작=끝이면 항상 False."""
+    c = dnd_conf()
+    if not c["enabled"]:
+        return False
+    sh, sm = map(int, c["start"].split(":"))
+    eh, em = map(int, c["end"].split(":"))
+    s_, e_, m = sh * 60 + sm, eh * 60 + em, now.hour * 60 + now.minute
+    if s_ == e_:
+        return False
+    return (s_ <= m < e_) if s_ < e_ else (m >= s_ or m < e_)
+
+
+def write_settings(rep_name=None, size=None, dnd=None):
     """대표 이름(컨펌·수정 요청자)·버디 크기. .agency-state/ 는 버전 관리에서 제외된다."""
     d = read_settings()
     if rep_name is not None:
@@ -478,6 +496,13 @@ def write_settings(rep_name=None, size=None):
         if size not in BUDDY_SIZES:
             raise AgencyError("버디 크기는 작게/보통/크게 중 하나입니다.")
         d["buddy_size"] = size
+    if dnd is not None:
+        for k in ("start", "end"):
+            v = str(dnd.get(k) or "")
+            if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", v):
+                raise AgencyError("시간은 09:00 형식이어야 합니다.")
+            d["dnd_" + k] = v
+        d["dnd_enabled"] = bool(dnd.get("enabled"))
     SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
     tmp = SETTINGS_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -913,15 +938,116 @@ def buddy_alerts(client, today):
     return out
 
 
+def collect_deliverables(client):
+    out = []
+    pdir = common.client_dir(client) / "projects"
+    if pdir.is_dir():
+        for d in sorted(pdir.iterdir()):
+            f = d / "status.json"
+            if not f.is_file():
+                continue
+            try:
+                st = json.loads(f.read_text(encoding="utf-8"))
+            except ValueError:
+                continue
+            for name, ds in (st.get("deliverables") or {}).items():
+                area = next((a for a in AREAS if (d / a / name).is_file()), "deliverables")
+                out.append({"name": name, "state": (ds or {}).get("state"), "at": str((ds or {}).get("at") or "")[:10],
+                            "role": role_of_file(name, area, st.get("stage")) or ""})
+    return out
+
+
+def buddy_roles(client, today):
+    """캐릭터를 눌렀을 때 보여 줄 역할별 현황(AE~MP). 기존 데이터에서 센 값만 쓰고, 기록이 없으면 그렇게 적는다."""
+    t = today.isoformat()
+    lib = lib_load(client)
+    dels = collect_deliverables(client)
+    mon = today - datetime.timedelta(days=today.weekday())
+    try:
+        rows = [r for r in perf_load(client)[0] if mon <= r["date"] <= today]
+    except (AgencyError, OSError):
+        rows = []
+    projects = []
+    pdir = common.client_dir(client) / "projects"
+    if pdir.is_dir():
+        for d in sorted(pdir.iterdir()):
+            try:
+                projects.append(json.loads((d / "status.json").read_text(encoding="utf-8")))
+            except (OSError, ValueError):
+                pass
+    out = []
+    for code in ROLE_CODES:
+        ev = [e for e in lib["events"] if (e.get("role") or EVENT_ROLE.get(e.get("type") or "", "")) == code]
+        rq = [r for r in lib["requests"] if r.get("role") == code]
+        mine = [x for x in dels if x["role"] == code]
+        pend = [x for x in mine if x["state"] == "review_passed"]
+        late = [e for e in ev if e.get("type") == "콘텐츠" and not e.get("done") and e.get("date", "9") < t] + \
+               [r for r in rq if r.get("status") != "클로즈" and r.get("due") and r["due"] < t]
+        stale = [x for x in pend if x["at"] and x["at"] < (today - datetime.timedelta(days=2)).isoformat()]
+        parts = []
+        if code == "AE":
+            open_rq = [r for r in lib["requests"] if r.get("status") != "클로즈"]
+            open_is = [i for i in lib["issues"] if i.get("status") != "해결"]
+            if open_rq:
+                parts.append(f"오픈 리퀘스트 {len(open_rq)}")
+            if open_is:
+                parts.append(f"이슈 {len(open_is)}")
+        if code == "AP" and projects:
+            parts.append(f"컨셉 선택 {sum(1 for p in projects if p.get('selected_concept'))}/{len(projects)}")
+        if code == "PD":
+            nxt = sorted((e for e in ev if e.get("type") == "촬영" and not e.get("done") and e.get("date", "") >= t), key=lambda e: e["date"])
+            if nxt:
+                dd = (datetime.date.fromisoformat(nxt[0]["date"]) - today).days
+                parts.append("슈팅 오늘" if dd == 0 else f"슈팅 D-{dd}")
+        if code == "MP" and rows:
+            parts.append(f"이번 주 집행 {int(ad_report.aggregate(rows, False)['cost']):,}원")
+        if pend:
+            parts.append(f"컨펌 대기 {len(pend)}")
+        elif code in ("CW", "AD", "PD") and mine:
+            parts.append(f"결과물 {len(mine)}")
+        text = " · ".join(parts) if parts else ("매체 연동 필요" if code == "MP" else "기록 없음")
+        has = bool(parts) or bool(ev) or bool(rq) or bool(mine)
+        out.append({"code": code, "text": text, "dot": "late" if late else "warn" if stale else "ok" if has else "none"})
+    return out
+
+
 def buddy_state():
+    now = common.now_kst()
     today = common.today_kst()
+    quiet = dnd_active(now)
+    snz = snooze_load(now)
     accounts = []
     for i, c in enumerate(list_clients()):
         char, char_set = read_buddy(c["id"], i)
-        alerts = buddy_alerts(c["id"], today)
-        state = "urgent" if any(a["level"] == "urgent" for a in alerts) else "alert" if alerts else "work"
-        accounts.append({"id": c["id"], "name": c["name"].split(" (")[0], "char": char, "state": state, "alerts": alerts})
-    return {"now": common.now_kst().isoformat(), "today": today.isoformat(), "size": buddy_size(), "accounts": accounts}
+        alerts = [a for a in buddy_alerts(c["id"], today) if f"{c['id']}|{a['id']}" not in snz]
+        urgent = sum(1 for a in alerts if a["level"] == "urgent")
+        state = "sleep" if quiet else "urgent" if urgent else "alert" if alerts else "work"
+        accounts.append({"id": c["id"], "name": c["name"].split(" (")[0], "char": char, "state": state, "alerts": [] if quiet else alerts,
+                         "urgent": urgent, "roles": buddy_roles(c["id"], today)})
+    return {"now": now.isoformat(), "today": today.isoformat(), "size": buddy_size(), "quiet": quiet,
+            "guide_snoozed": "|guide:first" in snz, "accounts": accounts}
+
+
+SNOOZE_FILE = common.root() / ".agency-state" / "buddy-snooze.json"
+
+
+def snooze_load(now):
+    try:
+        d = json.loads(SNOOZE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {k: v for k, v in d.items() if isinstance(v, str) and v > now.isoformat()}
+
+
+def snooze_add(acc, alert_id, minutes=10):
+    now = common.now_kst()
+    d = snooze_load(now)
+    d[f"{clean_text(acc, 40)}|{clean_text(alert_id, 120)}"] = (now + datetime.timedelta(minutes=max(1, min(int(minutes or 10), 240)))).isoformat()
+    SNOOZE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = SNOOZE_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(SNOOZE_FILE)
+    return {"ok": True}
 
 
 def buddy_running():
@@ -1021,7 +1147,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/state":
             return {"active": common.get_active(), "clients": list_clients(), "claude": bool(shutil.which("claude")),
                     "running": running, "channels": channels(), "today": common.today_kst().isoformat(),
-                    "rep": read_settings().get("rep_name", ""), "buddy_size": buddy_size()}
+                    "rep": read_settings().get("rep_name", ""), "buddy_size": buddy_size(), "dnd": dnd_conf()}
         if path == "/api/session" and method == "POST":
             common.set_active(common.validate_id(b.get("client"), "client_id"))
             return {"active": common.get_active()}
@@ -1093,10 +1219,12 @@ class Handler(BaseHTTPRequestHandler):
             c = need_active()
             return {"item": feedback.reject(c, clean_text(b.get("id"), 20))}
         if path == "/api/settings" and method == "POST":
-            d = write_settings(b.get("rep_name") if "rep_name" in b else None, b.get("buddy_size"))
-            return {"rep": d.get("rep_name", ""), "buddy_size": buddy_size()}
+            d = write_settings(b.get("rep_name") if "rep_name" in b else None, b.get("buddy_size"), b.get("dnd"))
+            return {"rep": d.get("rep_name", ""), "buddy_size": buddy_size(), "dnd": dnd_conf()}
         if path == "/api/buddy":
             return buddy_state()
+        if path == "/api/buddy-snooze" and method == "POST":
+            return snooze_add(b.get("acc") or "", b.get("id") or "", b.get("minutes") or 10)
         if path == "/api/buddy-launch" and method == "POST":
             return launch_buddy()
         if path == "/api/new-account" and method == "POST":

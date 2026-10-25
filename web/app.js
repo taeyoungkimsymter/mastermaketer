@@ -619,14 +619,17 @@ function settingsModal() {
   modal(`<h3>설정</h3>
     <div class="field"><label class="lbl" for="rep">대표 이름</label><input class="in" id="rep" value="${esc(S.st.rep)}" maxlength="40" placeholder="예: 김대표"><span class="hint">컨펌·수정 요청·피드백 규칙 승인에 자동으로 쓰입니다. 이 PC의 .agency-state/ 에만 저장됩니다.</span></div>
     <div class="field" style="margin-top:12px"><span class="lbl">버디 크기</span><div class="seg" role="radiogroup" aria-label="버디 크기">${[['small', '작게'], ['normal', '보통'], ['large', '크게']].map(([k, l]) => `<button type="button" class="seg-b" role="radio" data-bs="${k}" aria-checked="${(S.st.buddy_size || 'small') === k}" aria-pressed="${(S.st.buddy_size || 'small') === k}">${l}</button>`).join('')}</div><span class="hint">바탕화면 버디의 크기예요. 저장하면 30초 안에 바뀌어요.</span></div>
+    <div class="field" style="margin-top:12px"><span class="lbl">버디 방해 금지</span>
+      <label class="pick"><input type="checkbox" id="dndOn" ${(S.st.dnd || {}).enabled ? 'checked' : ''}><span>이 시간에는 버디가 쉬어요 (긴급만 작은 배지로 남아요)</span></label>
+      <div class="row" style="margin-top:8px"><input class="in" type="time" id="dndS" value="${esc((S.st.dnd || {}).start || '19:00')}" aria-label="시작 시간" style="width:130px"><span>~</span><input class="in" type="time" id="dndE" value="${esc((S.st.dnd || {}).end || '09:00')}" aria-label="끝 시간" style="width:130px"></div></div>
     <div class="row end"><button class="btn" id="m-no">닫기</button><button class="btn pri" id="m-ok">저장</button></div>`,
   m => {
     $('#m-no', m).onclick = closeModal;
     let bs = S.st.buddy_size || 'small';
     m.querySelectorAll('[data-bs]').forEach(b => b.onclick = () => { bs = b.dataset.bs; m.querySelectorAll('[data-bs]').forEach(x => { const on = x.dataset.bs === bs; x.setAttribute('aria-pressed', on); x.setAttribute('aria-checked', on); }); });
     $('#m-ok', m).onclick = guard(async () => {
-      const r = await api('/api/settings', { rep_name: $('#rep', m).value.trim(), buddy_size: bs });
-      S.st.rep = r.rep; S.st.buddy_size = r.buddy_size;
+      const r = await api('/api/settings', { rep_name: $('#rep', m).value.trim(), buddy_size: bs, dnd: { enabled: $('#dndOn', m).checked, start: $('#dndS', m).value, end: $('#dndE', m).value } });
+      S.st.rep = r.rep; S.st.buddy_size = r.buddy_size; S.st.dnd = r.dnd;
       closeModal(); toast('설정을 저장했습니다.', 'ok');
     });
   });
