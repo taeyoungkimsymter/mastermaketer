@@ -76,7 +76,7 @@ const AREA = { deliverables: '산출물', review: '검수', research: '조사·�
 const ROLE_CODES = ['AE', 'AP', 'CW', 'AD', 'PD', 'MP'];
 /* ---------- 상태 ---------- */
 const S = {
-  st: null, ws: null, view: 'welcome', tab: null, sub: null, ov: [], lib: { references: [], competitors: [], keywords: [], events: [], requests: [], issues: [] }, form: {}, mode: 'month',
+  st: null, ws: null, view: 'welcome', tab: null, sub: null, ov: [], lib: { references: [], competitors: [], keywords: [], events: [], requests: [], issues: [], campaigns: [] }, form: {}, mode: 'month',
   run: null, // {cmd, fields, start, steps:[], logs:[], items:[], notices:[], running}
   jobId: null, since: 0, timer: null,
   res: { project: '', items: [], sel: null, text: '' },
@@ -203,7 +203,7 @@ const PLATFORMS = [
 const TABS = [
   { id: 'overview', label: 'Overview', en: 'Overview', code: '', desc: '어카운트 팀의 진행 상황을 한눈에 봅니다.', subs: [] },
   { id: 'account', label: 'Account', en: 'Account', code: 'AE', desc: '클라이언트 리퀘스트를 팀에 배정하고, 포스팅과 이슈를 챙깁니다.',
-    subs: [['brief', 'Brief', 'brief'], ['cal', 'Content Calendar', 'cal'], ['req', 'Client Request', 'requests'], ['issue', 'Issue Log', 'issues'], ['meeting', 'Meeting Note', 'meeting']] },
+    subs: [['playbook', 'Playbook', 'playbook'], ['cal', 'Content Calendar', 'cal'], ['req', 'Client Request', 'requests'], ['issue', 'Issue Log', 'issues'], ['meeting', 'Meeting Note', 'meeting']] },
   { id: 'strategy', label: 'Strategy', en: 'Strategy', code: 'AP', desc: '레퍼런스·경쟁사·키워드를 모아 방향을 잡습니다.',
     subs: [['references', 'Reference Board', 'lib-references'], ['competitors', 'Competitor Watch', 'lib-competitors'], ['keywords', 'Keyword Insight', 'lib-keywords']] },
   { id: 'copy', label: 'Copy', en: 'Copy', code: 'CW', desc: '카피 3안과 상세페이지 카피를 씁니다.',
@@ -276,14 +276,14 @@ function renderSide() {
   const on = { cal: S.view === 'calendar', team: S.view === 'team', rep: S.view === 'reports' };
   const onAcc = !on.cal && !on.team && !on.rep;
   $('#rail').innerHTML = `<span class="r-logo" role="img" aria-label="마스터마케터">${logoSvg(40, '#4B48D0', 6, 3.5)}</span>
-    <button class="r-btn ${onAcc ? 'on' : ''}" data-home title="All Accounts" aria-label="All Accounts" ${onAcc ? 'aria-current="page"' : ''}>${ICONS.grid}</button>
-    <button class="r-btn ${on.cal ? 'on' : ''}" data-cal title="Calendar" aria-label="Calendar" ${on.cal ? 'aria-current="page"' : ''}>${ICONS.calendar}</button>
-    <button class="r-btn ${on.team ? 'on' : ''}" data-team title="Team" aria-label="Team" ${on.team ? 'aria-current="page"' : ''}>${ICONS.team}</button>
+    <button class="r-btn ${onAcc ? 'on' : ''}" data-home data-tip="All Accounts" aria-label="All Accounts" ${onAcc ? 'aria-current="page"' : ''}>${ICONS.grid}</button>
+    <button class="r-btn ${on.cal ? 'on' : ''}" data-cal data-tip="Calendar" aria-label="Calendar" ${on.cal ? 'aria-current="page"' : ''}>${ICONS.calendar}</button>
+    <button class="r-btn ${on.team ? 'on' : ''}" data-team data-tip="Team" aria-label="Team" ${on.team ? 'aria-current="page"' : ''}>${ICONS.team}</button>
     <span class="spacer"></span>
-    <button class="r-btn" data-buddy title="버디 띄우기" aria-label="버디 띄우기">${ICONS.buddy}</button>
-    <button class="r-btn" data-settings title="설정" aria-label="설정">${ICONS.sliders}</button>
-    <button class="r-btn theme" data-theme-toggle title="${dark ? '라이트 모드' : '다크 모드'}" aria-label="${dark ? '라이트 모드로 전환' : '다크 모드로 전환'}">${dark ? ICONS.sun : ICONS.moon}</button>
-    <span class="r-conn" title="${connTxt}"><span class="dot ${!S.st.claude ? 'bad' : run ? 'run' : 'ok'}"></span></span>`;
+    <button class="r-btn" data-buddy data-tip="버디 띄우기" aria-label="버디 띄우기">${ICONS.buddy}</button>
+    <button class="r-btn" data-settings data-tip="설정" aria-label="설정">${ICONS.sliders}</button>
+    <button class="r-btn theme" data-theme-toggle data-tip="${dark ? '라이트 모드' : '다크 모드'}" aria-label="${dark ? '라이트 모드로 전환' : '다크 모드로 전환'}">${dark ? ICONS.sun : ICONS.moon}</button>
+    <span class="r-conn" data-tip="${connTxt}"><span class="dot ${!S.st.claude ? 'bad' : run ? 'run' : 'ok'}"></span></span>`;
   $('#rail').querySelector('[data-home]').onclick = () => go('welcome');
   $('#rail').querySelector('[data-cal]').onclick = () => go('calendar');
   $('#rail').querySelector('[data-team]').onclick = () => go('team');
@@ -318,7 +318,7 @@ function renderSide() {
   $('#swNew').onclick = () => { closeSw(); newAccountModal(); };
   $('#acctList').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { const t = TABS.find(x => x.id === b.dataset.t); goSub(t.id, t.subs.length ? t.subs[0][0] : ''); });
 }
-const chipCount = k => ({ brief: S.brief && S.brief.count ? `v${S.brief.versions[S.brief.versions.length - 1].n}` : '', cal: S.lib.events.length, req: S.lib.requests.length, issue: S.lib.issues.length }[k] ?? '');
+const chipCount = k => ({ playbook: S.pbLatest && S.pbLatest.count ? `v${S.pbLatest.versions[S.pbLatest.versions.length - 1].n}` : '', cal: S.lib.events.length, req: S.lib.requests.length, issue: S.lib.issues.length }[k] ?? '');
 /* My Tasks: 이 역할에 배정된 열린 리퀘스트 (설계서 §4) */
 function myTasksHtml(code) {
   const mine = S.lib.requests.filter(r => r.role === code && r.status !== '클로즈').sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
@@ -342,12 +342,13 @@ function renderAcctHead() {
       <button class="btn" data-theme-toggle2>${document.documentElement.dataset.theme === 'dark' ? '라이트 모드' : '다크 모드'}</button>
       <div class="more"><button class="btn icon" data-more aria-haspopup="menu" aria-expanded="false" aria-label="더보기 (피드백 규칙·결과물)">⋯</button>
         <div class="menu" role="menu" hidden><button role="menuitem" data-act="team">담당자 배정</button><button role="menuitem" data-act="buddy">캐릭터 설정</button><button role="menuitem" data-act="settings">설정 · 대표 이름</button><hr>${MORE.map(m => `<button role="menuitem" data-m="${m[2]}">${esc(m[1])}${m[0] === 'feedback' && cand ? `<span class="cnt">${cand}</span>` : ''}</button>`).join('')}</div></div></div></header>
-    ${desc ? `<div class="th"><span class="muted">${esc(desc)}</span>${tab && ['strategy', 'copy', 'art'].includes(tab.id) ? `<button class="lnk acc" data-brief>${S.brief && S.brief.count ? `브리프 보기 (v${S.brief.versions[S.brief.versions.length - 1].n}) ›` : '브리프 작성하기 ›'}</button>` : ''}</div>` : ''}
+    ${desc ? `<div class="th"><span class="muted">${esc(desc)}</span>${tab && ['strategy', 'copy', 'art'].includes(tab.id) ? `<button class="lnk acc" data-brief>${S.pbLatest && S.pbLatest.count ? `Playbook 보기 (v${S.pbLatest.versions[S.pbLatest.versions.length - 1].n}) ›` : 'Playbook 작성하기 ›'}</button>` : ''}</div>` : ''}
     ${tab && tab.subs.length ? `<div class="chips">${tab.subs.map(([k, l]) => { const n = chipCount(k); return `<button class="fchip" data-c="${k}" aria-pressed="${k === S.sub}">${esc(l)}${n === '' ? '' : ` <span class="n">${n}</span>`}</button>`; }).join('')}</div>` : ''}
+    ${tab && ['copy', 'art'].includes(tab.id) ? pbSummaryHtml(tab.id) : ''}
     ${tab && tab.code ? myTasksHtml(tab.code) : ''}`;
   el.querySelector('[data-back]').onclick = () => go('welcome');
   el.querySelector('[data-pend]').onclick = () => openDrawer('ALL');
-  const bl = el.querySelector('[data-brief]'); if (bl) bl.onclick = () => goSub('account', 'brief');
+  const bl = el.querySelector('[data-brief]'); if (bl) bl.onclick = () => goSub('account', 'playbook');
   el.querySelector('[data-theme-toggle2]').onclick = toggleTheme;
   const mb = el.querySelector('[data-more]'), mn = el.querySelector('.menu');
   const closeMenu = () => { mn.hidden = true; mb.setAttribute('aria-expanded', 'false'); document.removeEventListener('click', outside); };
@@ -390,8 +391,8 @@ async function refresh() {
   if (S.st.active) {
     S.ws = await api('/api/workspace');
     try { S.fb = (await api('/api/feedback')).items; } catch { S.fb = []; }
-    try { S.lib = await api('/api/library'); } catch { S.lib = { references: [], competitors: [], keywords: [], events: [], requests: [], issues: [] }; }
-  } else { S.ws = null; S.fb = []; S.lib = { references: [], competitors: [], keywords: [], events: [], requests: [], issues: [] }; }
+    try { S.lib = await api('/api/library'); } catch { S.lib = { references: [], competitors: [], keywords: [], events: [], requests: [], issues: [], campaigns: [] }; }
+  } else { S.ws = null; S.fb = []; S.lib = { references: [], competitors: [], keywords: [], events: [], requests: [], issues: [], campaigns: [] }; }
 }
 function goSub(tab, sub) {
   if (tab === 'overview' || !sub) return go('overview', 'overview', '');
@@ -405,7 +406,7 @@ async function go(v, tab, sub) {
   const loc = tab ? [tab, sub] : locate(v);
   if (loc && S.st.active) [S.tab, S.sub] = loc; else S.tab = S.sub = null;
   if (S.detail) { S.detail = null; renderDetail(); }
-  if (S.st.active && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview(), loadBriefState()]);
+  if (S.st.active && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview(), loadPlaybookState()]);
   if (v === 'overview') await loadPerfWeek();
   if (v === 'results') await loadResults();
   if (v === 'feedback') { try { S.fb = (await api('/api/feedback')).items; } catch (e) { toast(e.message, 'bad'); } }
@@ -424,7 +425,7 @@ function render() {
   if (v === 'content-perf') return viewContentPerf();
   if (v === 'cal') return viewCal();
   if (v === 'requests') return viewRequests();
-  if (v === 'brief') return viewBrief();
+  if (v === 'playbook') return viewPlaybook();
   if (v === 'issues') return viewIssues();
   if (v === 'adstudio') return viewAdStudio();
   if (v === 'pdp') return viewPdp();
@@ -498,13 +499,13 @@ function newAccountModal() {
     draw();
   });
 }
-async function loadBriefState() { try { S.brief = await api('/api/brief-v'); } catch { S.brief = { count: 0, versions: [] }; } }
+async function loadPlaybookState() { try { S.pbLatest = await api('/api/playbook'); } catch { S.pbLatest = { count: 0, versions: [], data: null }; } }
 function checklistSteps() {
   const acc = accOf(S.st.active) || {}, a = S.st.active;
   return [
     { title: '담당자 배정', desc: 'AE · AP · CW · AD · PD · MP에 팀원 이름을 넣어요', cta: '배정하기', done: Object.keys(acc.team || {}).length > 0, act: teamModal },
     { title: '버디 캐릭터 붙이기', desc: '이 어카운트를 지켜볼 캐릭터를 골라요. 안 붙여도 앱 안 알림은 똑같이 보여요.', cta: '고르기', done: false, optional: true, hide: !!acc.char, act: buddyModal },
-    { title: '브리프 작성', desc: '캠페인 목표 · 예산 · 기간을 정리해요. 저장하면 Phase가 Concept로 넘어가요', cta: '작성하기', done: !!(S.brief && S.brief.count), act: () => goSub('account', 'brief') },
+    { title: 'Playbook 작성', desc: '브랜드 기본·타깃·운영 컨셉·톤앤매너를 채우면 체크돼요. Phase가 Concept로 넘어가요', cta: '작성하기', done: !!(S.pbLatest && S.pbLatest.latest_complete), act: () => goSub('account', 'playbook') },
     { title: '첫 포스팅 일정 추가', desc: 'Account › Content Calendar에서 일정을 넣어요', cta: '일정 추가', done: S.lib.events.some(e => e.type === '콘텐츠'), act: async () => { S.calMode = 'list'; await goSub('account', 'cal'); postModal(); } },
     { title: '광고 데이터 연결', desc: '매체 CSV를 data/raw에 넣으면 Performance가 채워져요', cta: '방법 보기', done: (S.ws.inputs.raw || []).some(f => /\.(csv|xlsx|xlsm)$/i.test(f)), act: () => goSub('performance', 'media') },
   ].filter(x => !x.hide).map((x, i) => ({ ...x, no: i + 1, a }));
@@ -769,58 +770,121 @@ function reviseModal(it) {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.drawer && $('#modal').hidden) closeDrawer(); });
 
-/* ---------- Brief (Account › Brief): 저장할 때마다 새 버전(v1, v2…)으로 쌓인다 ---------- */
-const BRIEF_CHANNELS = ['인스타그램', '블로그', '유튜브', '메타 광고', '구글 광고', '틱톡'];
-async function viewBrief() {
-  const P = await api('/api/brief-v' + (S.briefSel ? `?v=${S.briefSel}` : '')); S.brief = P;
-  if (S.view !== 'brief') return;
-  const d = P.data || { campaign: '', start: '', end: '', goal: '', target: '', kpi: [], budget: '', channels: '', message: '', deliverables: [], links: [], constraints: '', contact: '' };
+/* ---------- Playbook (Account › Playbook): 팀과 AI가 콘텐츠를 만들 때마다 기준으로 삼는 운영 가이드. 저장할 때마다 v1, v2… 로 쌓인다 ---------- */
+const bannedWords = () => (((S.pbLatest || {}).data || {}).rules || {}).banned || [];
+const bannedHits = text => bannedWords().filter(w => w && text.includes(w));
+const pbBlank = () => ({ brand: {}, target: { core: [{}], secondary: '' }, concept: { line: '', pillars: [{}, {}, {}] }, tone: { keywords: ['', '', ''], speech: '', emoji: '', do: ['', ''], dont: ['', ''] },
+  positioning: { competitors: ['', '', ''] }, visual: { links: [] }, channels: { rows: [] }, kpi: { rows: [], cycle: '' }, rules: { banned: [] } });
+function pbSummaryHtml(tabId) {
+  const d = S.pbLatest && S.pbLatest.data;
+  const go = '<button class="lnk acc" data-brief>Playbook 열기 ›</button>';
+  if (!d) return `<div class="pbsum"><span class="muted">Playbook이 아직 없어요. 팀이 같은 기준으로 일하도록 먼저 작성해 주세요.</span>${go}</div>`;
+  if (tabId === 'copy') {
+    const t = d.tone || {}, ban = (d.rules || {}).banned || [];
+    return `<div class="pbsum"><b>톤앤매너</b>${(t.keywords || []).filter(Boolean).map(k => `<span class="chip acc">${esc(k)}</span>`).join('') || '<span class="muted">키워드 미정</span>'}
+      <span class="muted">${esc([t.speech, t.emoji ? `이모지 ${t.emoji}` : ''].filter(Boolean).join(' · ') || '말투 미정')}</span>
+      <b style="margin-left:6px">금지어</b>${ban.length ? ban.slice(0, 8).map(w => `<span class="chip bad">${esc(w)}</span>`).join('') + (ban.length > 8 ? `<span class="muted">+${ban.length - 8}</span>` : '') : '<span class="muted">없음</span>'}</div>`;
+  }
+  const v = d.visual || {}, hex = (v.color || '').match(/#[0-9a-fA-F]{3,8}\b/);
+  return `<div class="pbsum"><b>비주얼 가이드</b>${v.color ? `<span class="chip">${hex ? `<i class="cswatch" style="background:${esc(hex[0])}"></i>` : ''}${esc(v.color)}</span>` : '<span class="muted">메인 컬러 미정</span>'}
+    ${v.mood ? `<span class="chip acc">${esc(v.mood)}</span>` : '<span class="muted">무드 미정</span>'}${v.avoid ? `<span class="muted">피해야 할 표현: ${esc(v.avoid)}</span>` : ''}</div>`;
+}
+const hasAny = o => o && typeof o === 'object' ? Object.values(o).some(hasAny) : Array.isArray(o) ? o.some(hasAny) : !!o || o === 0;
+function campaignModal(c) {
+  const e = c || {};
+  modal(`<h3>${c ? '캠페인 수정' : '캠페인 추가'}</h3><form id="cf" class="form" autocomplete="off">
+    <label class="field"><span class="lbl">캠페인명<span class="req">*</span></span><input class="in" name="name" maxlength="80" value="${esc(e.name || '')}" required placeholder="예: 가을 신제품 런칭"></label>
+    <div class="grid2"><label class="field"><span class="lbl">기간 시작</span><input class="in" type="date" name="start" value="${esc(e.start || '')}"></label><label class="field"><span class="lbl">기간 끝</span><input class="in" type="date" name="end" value="${esc(e.end || '')}"></label></div>
+    <label class="field"><span class="lbl">목표</span><textarea class="in" name="goal" maxlength="300">${esc(e.goal || '')}</textarea></label>
+    <label class="field"><span class="lbl">핵심 메시지</span><textarea class="in" name="message" maxlength="300">${esc(e.message || '')}</textarea></label>
+    <label class="field"><span class="lbl">산출물</span><textarea class="in" name="deliverables" maxlength="400" placeholder="한 줄에 하나씩">${esc(e.deliverables || '')}</textarea></label>
+    <div class="row end"><button class="btn" type="button" id="m-no">취소</button><button class="btn pri" type="submit">${c ? '저장' : '추가'}</button></div></form>`,
+  m => {
+    $('#m-no', m).onclick = closeModal;
+    $('#cf', m).onsubmit = guard(async ev => {
+      ev.preventDefault(); const f = ev.target.elements, item = {};
+      ['name', 'start', 'end', 'goal', 'message', 'deliverables'].forEach(k => { item[k] = f[k].value.trim(); });
+      if (c) { for (const k of Object.keys(item)) await libSet('campaigns', 'update', { id: c.id, item: { [k]: item[k] } }); }
+      else await libSet('campaigns', 'add', { item });
+      closeModal(); toast('캠페인을 저장했습니다.', 'ok'); viewPlaybook();
+    });
+  });
+}
+async function viewPlaybook() {
+  const P = await api('/api/playbook' + (S.pbSel ? `?v=${S.pbSel}` : ''));
+  if (S.view !== 'playbook') return;
   const latest = P.versions.length ? P.versions[P.versions.length - 1].n : 0, viewing = P.n || 0;
-  const chSel = new Set((d.channels || '').split(/\s*,\s*/).filter(Boolean));
-  const list = (name, arr, ph, type) => `<div class="rows" data-list="${name}">${(arr.length ? arr : ['']).map(v => `<div class="lrow"><input class="in" ${type ? `type="${type}"` : ''} value="${esc(v)}" placeholder="${esc(ph)}" maxlength="300"><button type="button" class="lnk" data-del aria-label="줄 삭제">✕</button></div>`).join('')}</div><button type="button" class="btn sm" data-add="${name}">+ 추가</button>`;
-  const kpis = d.kpi.length ? d.kpi : [{ metric: '', target: '' }];
-  $('#view').innerHTML = `<div class="stack brief">
-    <div class="fbar"><b class="mth">${latest ? `브리프 v${viewing}` : '새 브리프'}</b>${latest ? `<select class="in sm" id="bVer" style="width:auto" aria-label="버전 선택">${P.versions.slice().reverse().map(x => `<option value="${x.n}" ${x.n === viewing ? 'selected' : ''}>v${x.n}${x.n === latest ? ' (최신)' : ''} · ${esc((x.saved_at || '').slice(5, 16).replace('T', ' '))}</option>`).join('')}</select>` : '<span class="muted">처음엔 빈 양식이에요. 아는 만큼만 적고 저장하세요.</span>'}
-      <span class="spacer"></span><button class="btn pri" id="bSave">${latest ? `새 버전(v${latest + 1})으로 저장` : '브리프 저장 (v1)'}</button></div>
+  if (viewing === latest) S.pbLatest = P;
+  const d = Object.assign(pbBlank(), P.data || {});
+  const sec = P.sections || {}, inp = (path, val, ph, extra = '') => `<input class="in" data-f="${path}" value="${esc(val ?? '')}" placeholder="${esc(ph)}" ${extra}>`;
+  const ta = (path, val, ph, n = 300) => `<textarea class="in" data-f="${path}" maxlength="${n}" placeholder="${esc(ph)}">${esc(val ?? '')}</textarea>`;
+  const fld = (label, html, hint, req) => `<div class="field"><span class="lbl">${label}${req ? '<span class="req">*</span>' : ''}</span>${html}${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
+  const rowsHtml = (name, rows, mk, max, addLabel) => `<div class="rows" data-list="${name}" data-max="${max}">${rows.map(mk).join('')}</div><button type="button" class="btn sm" data-add="${name}">${addLabel}</button>`;
+  const del = '<button type="button" class="lnk" data-del aria-label="줄 삭제">✕</button>';
+  const reqSec = (key, title, desc, body) => `<section class="card pad pbs"><div class="pbh"><h2>${title}</h2><span class="pill-s ${sec[key] ? 'ok' : ''}">${sec[key] ? '채워짐' : '필수'}</span></div><p class="muted">${desc}</p>${body}</section>`;
+  const optSec = (title, desc, data, body) => `<details class="card pad pbs pbopt" ${hasAny(data) ? 'open' : ''}><summary><h2>${title}</h2><span class="pill-s">${hasAny(data) ? '작성됨' : '선택 · 나중에 채우기'}</span></summary><p class="muted">${desc}</p>${body}</details>`;
+  const pers = (d.target.core.length ? d.target.core : [{}]);
+  const pillars = (d.concept.pillars.length >= 3 ? d.concept.pillars : [...d.concept.pillars, {}, {}, {}].slice(0, 3));
+  const opt = (arr, cur) => arr.map(x => `<option ${x === cur ? 'selected' : ''}>${x}</option>`).join('');
+  const kw = [...d.tone.keywords, '', '', ''].slice(0, 3), dos = [...d.tone.do, '', ''].slice(0, 2), donts = [...d.tone.dont, '', ''].slice(0, 2), comps = [...d.positioning.competitors, '', '', ''].slice(0, 3);
+  $('#view').innerHTML = `<div class="stack playbook">
+    <div class="fbar"><b class="mth">${latest ? `Playbook v${viewing}` : '새 Playbook'}</b>${latest ? `<select class="in sm" id="pVer" style="width:auto" aria-label="버전 선택">${P.versions.slice().reverse().map(x => `<option value="${x.n}" ${x.n === viewing ? 'selected' : ''}>v${x.n}${x.n === latest ? ' (최신)' : ''} · ${esc((x.saved_at || '').slice(5, 16).replace('T', ' '))}</option>`).join('')}</select>` : '<span class="muted">팀과 AI가 콘텐츠를 만들 때마다 기준으로 삼는 문서예요. 아는 만큼 적고 저장하세요.</span>'}
+      <span class="spacer"></span><button class="btn pri" id="pSave">${latest ? `새 버전(v${latest + 1})으로 저장` : 'Playbook 저장 (v1)'}</button></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">${[['brand', '브랜드 기본'], ['target', '타깃'], ['concept', '운영 컨셉'], ['tone', '톤앤매너']].map(([k, l]) => `<span class="pill-s ${sec[k] ? 'ok' : ''}">${sec[k] ? '✓' : '○'} ${l}</span>`).join('')}<span class="muted" style="font-size:12.5px">필수 4섹션이 채워지면 Phase가 Concept로 넘어가요.</span></div>
     ${latest && viewing !== latest ? `<div class="note info">v${viewing}을 보고 있어요. 저장하면 이 내용을 바탕으로 v${latest + 1}이 새로 쌓여요(기존 버전은 그대로).</div>` : ''}
-    <form class="card pad form" id="bForm" autocomplete="off">
-      <label class="field"><span class="lbl">캠페인명<span class="req">*</span></span><input class="in" name="campaign" maxlength="80" value="${esc(d.campaign)}" placeholder="예: 가을 신제품 런칭"></label>
-      <div class="grid2"><label class="field"><span class="lbl">기간 시작</span><input class="in" type="date" name="start" value="${esc(d.start)}"></label><label class="field"><span class="lbl">기간 끝</span><input class="in" type="date" name="end" value="${esc(d.end)}"></label></div>
-      <label class="field"><span class="lbl">목표</span><textarea class="in" name="goal" maxlength="600" placeholder="이 캠페인으로 이루고 싶은 것">${esc(d.goal)}</textarea></label>
-      <label class="field"><span class="lbl">타깃</span><textarea class="in" name="target" maxlength="400" placeholder="누구에게 말하나요?">${esc(d.target)}</textarea></label>
-      <div class="field"><span class="lbl">KPI (지표 · 목표치)</span><div class="rows" data-list="kpi">${kpis.map(k => `<div class="lrow k2"><input class="in" value="${esc(k.metric)}" placeholder="지표 (예: 전환수)" maxlength="60"><input class="in" value="${esc(k.target)}" placeholder="목표치 (예: 주 50건)" maxlength="60"><button type="button" class="lnk" data-del aria-label="줄 삭제">✕</button></div>`).join('')}</div><button type="button" class="btn sm" data-add="kpi">+ 지표 추가</button><span class="hint">목표치를 모르면 비워 두세요. 근거 없는 숫자는 적지 않아요.</span></div>
-      <label class="field"><span class="lbl">예산</span><input class="in" name="budget" maxlength="80" value="${esc(d.budget)}" placeholder="캠페인 예산 (계약 금액이 아니에요)"></label>
-      <div class="field"><span class="lbl">채널</span><div class="row" style="flex-wrap:wrap;gap:6px">${BRIEF_CHANNELS.map(c => `<button type="button" class="fchip" data-chan="${c}" aria-pressed="${chSel.has(c)}">${c}</button>`).join('')}</div><input class="in" name="channels" maxlength="160" value="${esc(d.channels)}" placeholder="쉼표로 구분 (위 버튼으로도 고를 수 있어요)" style="margin-top:8px"></div>
-      <label class="field"><span class="lbl">핵심 메시지</span><textarea class="in" name="message" maxlength="400" placeholder="한 문장으로">${esc(d.message)}</textarea></label>
-      <div class="field"><span class="lbl">산출물 목록</span>${list('deliverables', d.deliverables, '예: 인스타 카드뉴스 4종')}</div>
-      <div class="field"><span class="lbl">레퍼런스 링크</span>${list('links', d.links, 'https://', 'url')}</div>
-      <label class="field"><span class="lbl">제약 사항 (금지 표현 · 법무 이슈 등)</span><textarea class="in" name="constraints" maxlength="600" placeholder="쓰면 안 되는 표현, 확인이 필요한 법무·심의 이슈">${esc(d.constraints)}</textarea></label>
-      <label class="field"><span class="lbl">클라이언트 담당자</span><input class="in" name="contact" maxlength="80" value="${esc(d.contact)}" placeholder="이름·직책만 (연락처는 적지 않아요)"></label>
+    <form id="pForm" class="stack" autocomplete="off">
+    ${reqSec('brand', '브랜드 기본', '브랜드가 누구이고 무엇을 파는지.', `<div class="grid2">${fld('브랜드명', inp('brand.name', d.brand.name, '예: 모카나루', 'maxlength="40"'), '', true)}${fld('카테고리', inp('brand.category', d.brand.category, '예: 스페셜티 카페', 'maxlength="40"'))}</div>
+      ${fld('한 줄 소개', inp('brand.tagline', d.brand.tagline, '브랜드를 한 문장으로', 'maxlength="100"'))}${fld('핵심 제품·서비스', inp('brand.products', d.brand.products, '주력 제품·서비스', 'maxlength="200"'))}`)}
+    ${reqSec('target', '타깃', '누구에게 말하는지. 핵심 페르소나는 최대 3명.', `${rowsHtml('persona', pers, r => `<div class="lrow k3"><input class="in" value="${esc(r.age || '')}" placeholder="나이대 (예: 20대 후반)" maxlength="30"><input class="in" value="${esc(r.situation || '')}" placeholder="상황 (예: 출근길 카페 이용)" maxlength="120"><input class="in" value="${esc(r.pain || '')}" placeholder="고민 (예: 원두 고르기 어려움)" maxlength="160">${del}</div>`, 3, '+ 페르소나 추가')}
+      ${fld('보조 타깃', ta('target.secondary', d.target.secondary, '핵심은 아니지만 함께 고려할 타깃', 200))}`)}
+    ${reqSec('concept', '운영 컨셉', '계정을 어떤 컨셉으로 운영하는지, 콘텐츠를 어떤 기둥으로 채우는지(3~4개).', `${fld('컨셉 한 줄', inp('concept.line', d.concept.line, '예: 하루를 깨우는 한 잔의 이야기', 'maxlength="120"'))}
+      <div class="field"><span class="lbl">콘텐츠 기둥 <small class="muted" id="pillarSum"></small></span>${rowsHtml('pillar', pillars, r => `<div class="lrow k3p"><input class="in" value="${esc(r.name || '')}" placeholder="기둥 이름" maxlength="40"><input class="in" value="${esc(r.desc || '')}" placeholder="설명" maxlength="160"><input class="in w" type="number" min="0" max="100" value="${esc(r.weight ?? '')}" placeholder="비중%">${del}</div>`, 4, '+ 기둥 추가')}</div>`)}
+    ${reqSec('tone', '톤앤매너', '글을 어떻게 쓰는지. AI 카피 명령도 이 내용을 따릅니다.', `<div class="field"><span class="lbl">성격 키워드 3개</span><div class="row">${kw.map(k => `<input class="in" data-kw value="${esc(k)}" placeholder="예: 다정한" maxlength="20">`).join('')}</div></div>
+      <div class="grid2">${fld('말투', `<select class="in" data-f="tone.speech"><option value="">선택</option>${opt(['존댓말', '반말'], d.tone.speech)}</select>`)}${fld('이모지', `<select class="in" data-f="tone.emoji"><option value="">선택</option>${opt(['사용', '가끔', '미사용'], d.tone.emoji)}</select>`)}</div>
+      <div class="field"><span class="lbl">이렇게 쓴다 (예문 2개)</span>${dos.map(x => `<input class="in" data-do value="${esc(x)}" placeholder="예: 오늘은 천천히 시작해요" maxlength="160" style="margin-bottom:6px">`).join('')}</div>
+      <div class="field"><span class="lbl">이렇게 안 쓴다 (예문 2개)</span>${donts.map(x => `<input class="in" data-dont value="${esc(x)}" placeholder="예: 지금 안 사면 후회합니다!!" maxlength="160" style="margin-bottom:6px">`).join('')}</div>`)}
+    ${optSec('포지셔닝', '경쟁 브랜드 대비 어디에 서 있는지.', d.positioning, `<div class="field"><span class="lbl">경쟁 브랜드 (2~3개)</span><div class="row">${comps.map(x => `<input class="in" data-comp value="${esc(x)}" placeholder="브랜드명" maxlength="40">`).join('')}</div></div>${fld('차별점', ta('positioning.diff', d.positioning.diff, '', 200))}${fld('브랜드 약속 한 문장', inp('positioning.promise', d.positioning.promise, '', 'maxlength="160"'))}`)}
+    ${optSec('비주얼 가이드', '색·무드·레퍼런스. Art 탭 상단에 요약돼요.', d.visual, `<div class="grid2">${fld('메인 컬러', inp('visual.color', d.visual.color, '예: #1B1A4B 네이비', 'maxlength="60"'))}${fld('무드 키워드', inp('visual.mood', d.visual.mood, '예: 차분한, 따뜻한, 미니멀', 'maxlength="100"'))}</div>
+      <div class="field"><span class="lbl">레퍼런스 링크</span>${rowsHtml('vlink', d.visual.links.length ? d.visual.links : [''], v => `<div class="lrow"><input class="in" value="${esc(v)}" placeholder="https://" maxlength="300">${del}</div>`, 10, '+ 링크 추가')}</div>${fld('피해야 할 표현', ta('visual.avoid', d.visual.avoid, '쓰지 않는 색·이미지·연출', 200))}`)}
+    ${optSec('채널 운영', '채널마다 역할과 업로드 계획. 주간 업로드 횟수는 이후 Content Calendar 알림에 쓰여요.', d.channels, rowsHtml('chan', d.channels.rows.length ? d.channels.rows : [{}], r => `<div class="lrow k4"><input class="in" value="${esc(r.channel || '')}" placeholder="채널 (예: 인스타그램)" maxlength="30"><input class="in" value="${esc(r.role || '')}" placeholder="역할" maxlength="100"><input class="in w" type="number" min="0" max="50" value="${esc(r.weekly ?? '')}" placeholder="주 N회"><input class="in" value="${esc(r.format || '')}" placeholder="주력 포맷" maxlength="60">${del}</div>`, 8, '+ 채널 추가'))}
+    ${optSec('목표·KPI', '채널별 지표와 목표치. 목표치를 모르면 비워 두세요(지어내지 않아요).', d.kpi, `${rowsHtml('kpi', d.kpi.rows.length ? d.kpi.rows : [{}], r => `<div class="lrow k3"><input class="in" value="${esc(r.channel || '')}" placeholder="채널" maxlength="30"><input class="in" value="${esc(r.metric || '')}" placeholder="지표 (예: 도달)" maxlength="40"><input class="in" value="${esc(r.target || '')}" placeholder="목표치 (예: 월 5만)" maxlength="40">${del}</div>`, 10, '+ 지표 추가')}${fld('점검 주기', `<select class="in" data-f="kpi.cycle" style="max-width:160px"><option value="">선택</option>${opt(['주간', '격주', '월간'], d.kpi.cycle)}</select>`)}`)}
+    ${optSec('금지·주의', '금지어는 AI 카피 검수에 바로 쓰이고, 결과물에 들어 있으면 경고해요.', d.rules, `${fld('금지어', ta('rules.banned', (d.rules.banned || []).join(', '), '쉼표나 줄바꿈으로 구분 (예: 최고, 무조건)', 600), '카피에 이 단어가 있으면 경고가 떠요.')}${fld('법적·심의 주의사항', ta('rules.legal', d.rules.legal, '', 300))}${fld('경쟁사 언급 규칙', inp('rules.competitor_rule', d.rules.competitor_rule, '예: 경쟁사 이름은 직접 쓰지 않는다', 'maxlength="200"'))}`)}
     </form>
-    <small class="muted">저장하면 "처음 시작하기"의 브리프 단계가 체크되고, Phase가 Brief를 지나 Concept로 넘어갈 수 있어요. 파일은 어카운트 폴더의 brief/ 에 쌓입니다.</small></div>`;
-  const v = $('#view'), form = $('#bForm');
+    <section class="card pad pbs"><div class="pbh"><h2>캠페인</h2><button class="btn sm pri" id="cAdd">+ 캠페인 추가</button></div><p class="muted">Playbook 기준 아래에서 진행하는 캠페인을 여러 개 쌓아 둘 수 있어요. 추가·수정하면 바로 저장돼요.</p>
+      <div class="evlist">${S.lib.campaigns.length ? S.lib.campaigns.map(c => `<div class="evrow"><div class="row"><b>${esc(c.name)}</b><span class="spacer"></span><small class="muted">${c.start || c.end ? `${esc(c.start ? mdShort(c.start) : '')} ~ ${esc(c.end ? mdShort(c.end) : '')}` : '기간 미정'}</small><button class="btn sm" data-ce="${esc(c.id)}">수정</button><button class="btn sm danger" data-cd="${esc(c.id)}">삭제</button></div>
+        ${c.goal ? `<p class="muted">목표: ${esc(c.goal)}</p>` : ''}${c.message ? `<p class="muted">핵심 메시지: ${esc(c.message)}</p>` : ''}${c.deliverables ? `<p class="muted">산출물: ${esc(c.deliverables).replace(/\n/g, ' · ')}</p>` : ''}</div>`).join('') : '<span class="muted">아직 캠페인이 없어요.</span>'}</div></section>
+    <small class="muted">파일은 어카운트 폴더의 playbook/ 에 playbook-v1, v2… 로 쌓이고, 같은 이름의 .md는 AI 팀이 읽는 사본이에요.</small></div>`;
+  const v = $('#view'), form = $('#pForm');
   const rowsOf = n => [...v.querySelectorAll(`[data-list="${n}"] .lrow`)];
+  const bindDel = () => v.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const host = b.closest('.rows'); if (host.children.length > 1) b.closest('.lrow').remove(); else b.closest('.lrow').querySelectorAll('input').forEach(i => { i.value = ''; }); sumP(); });
   v.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
-    const n = b.dataset.add, host = v.querySelector(`[data-list="${n}"]`), proto = host.lastElementChild.cloneNode(true);
-    proto.querySelectorAll('input').forEach(i => { i.value = ''; }); host.appendChild(proto); bindDel(); proto.querySelector('input').focus();
+    const host = v.querySelector(`[data-list="${b.dataset.add}"]`);
+    if (host.children.length >= +host.dataset.max) return toast(`최대 ${host.dataset.max}개까지 추가할 수 있어요.`, 'bad');
+    const proto = host.lastElementChild.cloneNode(true); proto.querySelectorAll('input').forEach(i => { i.value = ''; }); host.appendChild(proto); bindDel(); proto.querySelector('input').focus();
   });
-  const bindDel = () => v.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const host = b.closest('.rows'); if (host.children.length > 1) b.closest('.lrow').remove(); else b.closest('.lrow').querySelectorAll('input').forEach(i => { i.value = ''; }); });
   bindDel();
-  v.querySelectorAll('[data-chan]').forEach(b => b.onclick = () => {
-    const inp = form.elements.channels, set = new Set(inp.value.split(/\s*,\s*/).filter(Boolean));
-    set.has(b.dataset.chan) ? set.delete(b.dataset.chan) : set.add(b.dataset.chan); inp.value = [...set].join(', ');
-    b.setAttribute('aria-pressed', set.has(b.dataset.chan));
-  });
-  const ver = $('#bVer'); if (ver) ver.onchange = () => { S.briefSel = +ver.value; viewBrief(); };
-  $('#bSave').onclick = guard(async () => {
-    const f = form.elements, fields = {};
-    ['campaign', 'start', 'end', 'goal', 'target', 'budget', 'channels', 'message', 'constraints', 'contact'].forEach(k => { fields[k] = f[k].value.trim(); });
-    fields.kpi = rowsOf('kpi').map(r => { const i = r.querySelectorAll('input'); return { metric: i[0].value.trim(), target: i[1].value.trim() }; });
-    fields.deliverables = rowsOf('deliverables').map(r => r.querySelector('input').value.trim());
-    fields.links = rowsOf('links').map(r => r.querySelector('input').value.trim());
-    const r = await api('/api/brief-v', { fields });
-    S.briefSel = null; S.brief = r; toast(`브리프 v${r.saved}을(를) 저장했습니다.`, 'ok');
-    await loadAccounts(); renderSide(); renderAcctHead(); viewBrief();
+  const sumP = () => { const t = rowsOf('pillar').reduce((n, r) => n + (+r.querySelector('.w').value || 0), 0); $('#pillarSum').textContent = t ? `· 비중 합계 ${t}%${t > 100 ? ' (100% 이하로 맞춰 주세요)' : ''}` : ''; };
+  v.addEventListener('input', e => { if (e.target.closest('[data-list="pillar"]')) sumP(); }); sumP();
+  const ver = $('#pVer'); if (ver) ver.onchange = () => { S.pbSel = +ver.value; viewPlaybook(); };
+  $('#cAdd').onclick = () => campaignModal();
+  v.querySelectorAll('[data-ce]').forEach(b => b.onclick = () => campaignModal(S.lib.campaigns.find(c => c.id === b.dataset.ce)));
+  v.querySelectorAll('[data-cd]').forEach(b => b.onclick = guard(async () => { await libSet('campaigns', 'delete', { id: b.dataset.cd }); viewPlaybook(); }));
+  $('#pSave').onclick = guard(async () => {
+    const f = {}, setp = (path, val) => { const ks = path.split('.'); let o = f; ks.slice(0, -1).forEach(k => { o = o[k] = o[k] || {}; }); o[ks[ks.length - 1]] = val; };
+    form.querySelectorAll('[data-f]').forEach(el => setp(el.dataset.f, el.value.trim()));
+    const q = (n, i) => rowsOf(n).map(r => [...r.querySelectorAll('input')].map(x => x.value.trim()));
+    setp('target.core', q('persona').map(([age, situation, pain]) => ({ age, situation, pain })));
+    setp('concept.pillars', q('pillar').map(([name, desc, weight]) => ({ name, desc, weight })));
+    setp('tone.keywords', [...form.querySelectorAll('[data-kw]')].map(x => x.value.trim()));
+    setp('tone.do', [...form.querySelectorAll('[data-do]')].map(x => x.value.trim()));
+    setp('tone.dont', [...form.querySelectorAll('[data-dont]')].map(x => x.value.trim()));
+    setp('positioning.competitors', [...form.querySelectorAll('[data-comp]')].map(x => x.value.trim()));
+    setp('visual.links', q('vlink').map(r => r[0]));
+    setp('channels.rows', q('chan').map(([channel, role, weekly, format]) => ({ channel, role, weekly, format })));
+    setp('kpi.rows', q('kpi').map(([channel, metric, target]) => ({ channel, metric, target })));
+    const r = await api('/api/playbook', { fields: f });
+    S.pbSel = null; S.pbLatest = r; toast(`Playbook v${r.saved}을(를) 저장했습니다.`, 'ok');
+    await loadAccounts(); renderSide(); renderAcctHead(); viewPlaybook();
   });
 }
 
@@ -1321,52 +1385,52 @@ async function pickClient(id, then) {
 }
 const isoAdd = (iso, n) => { const d = new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const dayDiff = (a, b) => Math.round((new Date(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10)) - new Date(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10))) / 864e5);
-/* 메인 화면의 통합 캘린더: 모든 고객사의 일정을 읽기 전용으로 모아 본다. 추가·체크는 고객사를 연 뒤 그 고객사 캘린더에서 한다. */
-function homeCalHtml() {
-  const today = S.st.today, H = S.hcal = S.hcal || { y: +today.slice(0, 4), m: +today.slice(5, 7), sel: today, only: '' };
-  const pad = n => String(n).padStart(2, '0'), key = d => `${H.y}-${pad(H.m)}-${pad(d)}`;
-  const evs = (S.allEv || []).filter(e => !H.only || e.client === H.only);
-  const by = {}; evs.forEach(e => (by[e.date] = by[e.date] || []).push(e));
-  const lead = new Date(H.y, H.m - 1, 1).getDay(), days = new Date(H.y, H.m, 0).getDate();
+/* Calendar(레일): 전 어카운트 일정을 읽기 전용으로 모아 본다. 주간 보기가 기본이고 월간으로 바꿀 수 있다.
+   일정 추가·체크는 어카운트를 연 뒤 그 어카운트의 Content Calendar에서 한다. */
+const mondayOf = iso => isoAdd(iso, -((new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)).getDay() + 6) % 7));
+function calState() { const t = S.st.today; return S.hcal = S.hcal || { mode: 'week', wk: mondayOf(t), y: +t.slice(0, 4), m: +t.slice(5, 7), sel: t, only: '', role: '' }; }
+function calHtml() {
+  const H = calState(), today = S.st.today, pad = n => String(n).padStart(2, '0'), brands = S.st.clients;
+  const evs = (S.allEv || []).filter(e => (!H.only || e.client === H.only) && (!H.role || e.role === H.role));
   const late = e => !e.done && e.type === '콘텐츠' && e.date < today;
   const sort = (a, b) => a.date.localeCompare(b.date) || a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title);
-  let cells = '<span class="cal-d off"></span>'.repeat(lead);
-  for (let d = 1; d <= days; d++) {
-    const k = key(d), list = (by[k] || []).slice().sort(sort);
-    cells += `<button class="cal-d ${k === today ? 'today' : ''} ${k === H.sel ? 'sel' : ''}" data-d="${k}"><span class="dn">${d}</span>${list.slice(0, 3).map(e => `<span class="ev ${late(e) ? 'late' : ''}" style="--tc:${brandColor(e.client)}" ${e.done ? 'data-done' : ''} title="${esc(e.brand)}">${e.done ? '✓ ' : ''}${esc(e.brand)} · ${esc(e.title)}</span>`).join('')}${list.length > 3 ? `<span class="more">+${list.length - 3}</span>` : ''}</button>`;
+  const nm = e => e.brand.split(' (')[0];
+  const item = e => `<button class="wk-i evb" data-open="${esc(e.client)}" data-date="${esc(e.date)}"><span class="row" style="gap:6px"><span class="rcode s">${esc(e.role || '—')}</span><span class="bdot" style="background:${brandColor(e.client)}"></span><small>${esc(nm(e))}</small></span><span>${e.done ? '✓ ' : ''}${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</span>${late(e) ? '<small class="late-t">딜레이 · 포스팅 미확인</small>' : ''}</button>`;
+  let title, body;
+  if (H.mode === 'week') {
+    const days = [...Array(7)].map((_, i) => isoAdd(H.wk, i));
+    title = `${mdShort(days[0])} ~ ${mdShort(days[6])}`;
+    body = `<div class="wk-scroll"><div class="wk">${days.map(d => `<div class="wk-d ${d === today ? 'today' : ''}"><b>${dayLabel(d)}</b>${evs.filter(e => e.date === d).sort(sort).map(item).join('')}</div>`).join('')}</div></div>`;
+  } else {
+    title = `${H.y}년 ${H.m}월`;
+    const key = d => `${H.y}-${pad(H.m)}-${pad(d)}`, lead = new Date(H.y, H.m - 1, 1).getDay(), dn = new Date(H.y, H.m, 0).getDate();
+    const by = {}; evs.forEach(e => (by[e.date] = by[e.date] || []).push(e));
+    let cells = '<span class="cal-d off"></span>'.repeat(lead);
+    for (let d = 1; d <= dn; d++) {
+      const k = key(d), list = (by[k] || []).slice().sort(sort);
+      cells += `<button class="cal-d ${k === today ? 'today' : ''} ${k === H.sel ? 'sel' : ''}" data-d="${k}"><span class="dn">${d}</span>${list.slice(0, 3).map(e => `<span class="ev ${late(e) ? 'late' : ''}" style="--tc:${brandColor(e.client)}" ${e.done ? 'data-done' : ''} title="${esc(nm(e))}">${e.done ? '✓ ' : ''}${esc(nm(e))} · ${esc(e.title)}</span>`).join('')}${list.length > 3 ? `<span class="more">+${list.length - 3}</span>` : ''}</button>`;
+    }
+    const day = (by[H.sel] || []).slice().sort(sort);
+    body = `<div class="cal card"><div class="cal-w">${WEEKDAY.map(w => `<span>${w}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
+      <div class="card pad"><div class="sec-t" style="margin:0 0 10px">${esc(dayLabel(H.sel))} 일정 <span class="chip">${day.length}</span></div><div class="wk-day">${day.length ? day.map(item).join('') : '<span class="muted">이 날짜에 일정이 없어요.</span>'}</div></div>`;
   }
-  const day = (by[H.sel] || []).slice().sort(sort);
-  const wk = isoAdd(today, 7);
-  const todo = evs.filter(e => !e.done && e.date <= wk).sort(sort);
-  const major = evs.filter(e => !e.done && e.date > wk && e.date <= isoAdd(today, 45)).sort(sort).slice(0, 8);
-  const dd = e => { const n = dayDiff(e.date, today); return n < 0 ? `D+${-n}` : n === 0 ? '오늘' : `D-${n}`; };
-  const row = (e, withD) => `<div class="evrow ${e.done ? 'done' : ''}"><div class="row"><span class="bdot" style="background:${brandColor(e.client)}"></span><b>${esc(e.title)}</b>${e.sample ? '<span class="tag">예시</span>' : ''}<span class="spacer"></span>${withD ? `<span class="chip ${late(e) ? 'bad' : ''}">${dd(e)}</span>` : ''}</div>
-    <div class="row"><small>${esc(e.brand)}</small><span class="chip" data-t="${esc(e.type)}">${esc(typeLabel(e.type))}</span>${e.channel ? `<span class="chip">${esc(e.channel)}</span>` : ''}${e.done ? '<span class="chip ok">완료</span>' : late(e) ? '<span class="chip bad">업로드 미확인</span>' : ''}
-      <small class="muted">${esc(e.date.slice(5))}</small><span class="spacer"></span><button class="btn sm" data-open="${esc(e.client)}" data-date="${esc(e.date)}">열기</button></div></div>`;
-  const list = (arr, withD, empty) => arr.length ? arr.map(e => row(e, withD)).join('') : `<span class="muted">${empty}</span>`;
-  const brands = S.st.clients;
-  return `<div class="home-cal">
-    <div class="card pad calbox">
-      <div class="cal-head"><button class="btn sm" id="hPrev" aria-label="이전 달">${ICONS.back}</button><b>${H.y}년 ${H.m}월</b><button class="btn sm next" id="hNext" aria-label="다음 달">${ICONS.back}</button><button class="btn sm" id="hToday">오늘</button>
-        <span class="spacer"></span><div class="seg" role="group" aria-label="브랜드 필터"><button class="seg-b" data-only="" aria-pressed="${!H.only}">전체</button>${brands.map(c => `<button class="seg-b" data-only="${esc(c.id)}" aria-pressed="${H.only === c.id}"><span class="bdot" style="background:${brandColor(c.id)}"></span>${esc(c.name)}</button>`).join('')}</div></div>
-      <div class="cal"><div class="cal-w">${['일', '월', '화', '수', '목', '금', '토'].map(w => `<span>${w}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
-    </div>
-    <div class="grid3">
-      <div class="card pad"><div class="sec-t">${esc(H.sel)} 일정 <span class="chip">${day.length}</span></div><div class="evlist">${list(day, false, '이 날짜에 일정이 없어요.')}</div></div>
-      <div class="card pad"><div class="sec-t">할 일 <span class="chip">${todo.length}</span><small>딜레이 + 7일 이내</small></div><div class="evlist">${list(todo, true, '이번 주 할 일이 없어요.')}</div></div>
-      <div class="card pad"><div class="sec-t">주요 일정 <span class="chip">${major.length}</span><small>이후 45일</small></div><div class="evlist">${list(major, true, '예정된 일정이 없어요.')}</div></div>
-    </div>
-    <p class="hint muted" style="font-size:12.5px;margin:12px 2px 0">모아 보기 전용입니다. 일정 추가·체크는 어카운트를 연 뒤 그 어카운트 캘린더에서 하세요. 이 화면은 포스팅을 실행하지 않습니다.</p></div>`;
+  return `<div class="home-cal"><div class="calbar"><button class="btn sm" id="hPrev" aria-label="이전">${ICONS.back}</button><b class="mth">${title}</b><button class="btn sm next" id="hNext" aria-label="다음">${ICONS.back}</button><button class="btn sm" id="hToday">오늘</button>
+      <div class="seg" role="group" aria-label="보기"><button class="seg-b" data-mode="week" aria-pressed="${H.mode === 'week'}">주간</button><button class="seg-b" data-mode="month" aria-pressed="${H.mode === 'month'}">월간</button></div><span class="spacer"></span>
+      <select class="in sm" id="hAcc" aria-label="어카운트 필터" style="width:auto"><option value="">전체 어카운트</option>${brands.map(c => `<option value="${esc(c.id)}" ${H.only === c.id ? 'selected' : ''}>${esc(c.name.split(' (')[0])}</option>`).join('')}</select>
+      <select class="in sm" id="hRole" aria-label="역할 필터" style="width:auto"><option value="">전체 역할</option>${ROLE_CARDS.map(r => `<option value="${r.code}" ${H.role === r.code ? 'selected' : ''}>${r.code} · ${r.ko}</option>`).join('')}</select></div>
+    ${body}<p class="hint muted" style="font-size:12.5px;margin:6px 2px 0">모아 보기 전용이에요. 일정을 누르면 그 어카운트의 Content Calendar로 가요. 이 화면은 포스팅을 실행하지 않습니다.</p></div>`;
 }
-function bindHomeCal() {
-  const H = S.hcal, v = $('#view'), redraw = () => { v.querySelector('.home-cal').outerHTML = homeCalHtml(); bindHomeCal(); };
-  const nav = d => { H.m += d; if (H.m < 1) { H.m = 12; H.y--; } if (H.m > 12) { H.m = 1; H.y++; } redraw(); };
+function bindCal() {
+  const H = calState(), v = $('#view'), redraw = () => { v.querySelector('.home-cal').outerHTML = calHtml(); bindCal(); };
+  const nav = d => { if (H.mode === 'week') H.wk = isoAdd(H.wk, 7 * d); else { H.m += d; if (H.m < 1) { H.m = 12; H.y--; } if (H.m > 12) { H.m = 1; H.y++; } } redraw(); };
   $('#hPrev').onclick = () => nav(-1); $('#hNext').onclick = () => nav(1);
-  $('#hToday').onclick = () => { S.hcal = null; redraw(); };
-  v.querySelectorAll('.home-cal [data-only]').forEach(b => b.onclick = () => { H.only = b.dataset.only; redraw(); });
+  $('#hToday').onclick = () => { const t = S.st.today; Object.assign(H, { wk: mondayOf(t), y: +t.slice(0, 4), m: +t.slice(5, 7), sel: t }); redraw(); };
+  v.querySelectorAll('.home-cal [data-mode]').forEach(b => b.onclick = () => { H.mode = b.dataset.mode; redraw(); });
+  $('#hAcc').onchange = e => { H.only = e.target.value; redraw(); };
+  $('#hRole').onchange = e => { H.role = e.target.value; redraw(); };
   v.querySelectorAll('.home-cal [data-d]').forEach(b => b.onclick = () => { H.sel = b.dataset.d; redraw(); });
   v.querySelectorAll('.home-cal [data-open]').forEach(b => b.onclick = guard(async () => {
-    const d = b.dataset.date; S.cal = { y: +d.slice(0, 4), m: +d.slice(5, 7), sel: d };
+    const d = b.dataset.date; S.cal = { y: +d.slice(0, 4), m: +d.slice(5, 7), sel: d }; S.calMode = 'cal';
     const go2 = () => goSub('account', 'cal');
     if (S.st.active === b.dataset.open) go2(); else if (S.st.active) switchClientModal(b.dataset.open); else await pickClient(b.dataset.open, go2);
   }));
@@ -1421,19 +1485,14 @@ async function viewAccounts() {
   const chips = ['All', 'On Track', 'At Risk', 'Delayed', 'Onboarding'].filter(st => st !== 'Delayed' || cnt('Delayed'))
     .map(st => `<button class="fchip" data-st="${st}" aria-pressed="${F.st === st}">${st} ${st === 'All' ? acc.length : cnt(st)}</button>`).join('');
   const week = A.events.filter(e => e.date >= w0 && e.date <= w1).sort((a, b) => a.date.localeCompare(b.date) || a.brand.localeCompare(b.brand));
-  const open = A.events.filter(e => !e.done), load = ROLE_CODES.map(c => [c, open.filter(e => e.role === c).length]), mx = Math.max(1, ...load.map(l => l[1]));
   $('#view').innerHTML = `<div class="accounts-page">${pageHead('All Accounts', '운영 중인 어카운트와 팀 현황을 한눈에 봅니다.', true)}
     <div class="kpis">${kpis.map(([en, ko, v, sub, cls]) => `<div class="kpi"><span class="en">${en}</span><span class="ko">${ko}</span><b class="${cls}">${esc(v)}</b><small>${esc(sub)}</small></div>`).join('')}</div>
     ${E ? `<div class="card pad empty-acc"><b>아직 어카운트가 없어요</b><p>+ New Account 로 첫 어카운트를 만들면, Overview에서 "처음 시작하기" 순서를 안내해 드려요.</p><button class="btn pri" data-new-acc3>+ New Account</button></div>`
       : `<div class="fbar"><h2>Accounts</h2>${chips}</div><div class="agrid" id="agrid"></div>`}
-    <div class="two">
-      <section class="panel3 wide"><div class="p3h"><h2>This Week</h2><small>${esc(w0.slice(5).replace('-', '.'))} – ${esc(w1.slice(5).replace('-', '.'))} · 전 어카운트 일정</small></div>
-        ${week.length ? week.map(e => `<div class="agrow"><span class="muted">${esc(dayLabel(e.date))}</span><span class="code on">${esc(e.role || '—')}</span><span>${e.done ? '✓ ' : ''}${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</span><small>${esc(e.brand)}</small></div>`).join('') : '<p class="muted">이번 주 일정이 없어요. 어카운트의 캘린더에서 일정을 추가하세요.</p>'}</section>
-      <section class="panel3"><div class="p3h"><h2>Team Workload</h2><small>역할별 진행 중인 작업</small></div>
-        ${load.map(([c, n]) => `<div class="ldrow"><b>${c}</b><div class="bar"><div style="width:${Math.round(n / mx * 100)}%"></div></div><span>${n}</span></div>`).join('')}
-        <small class="muted">미완료 일정을 유형으로 역할에 나눈 값입니다(담당 배정 정보는 아직 없습니다).</small></section>
-    </div></div>`;
+    ${E ? '' : `<div class="linkrow"><button class="lnk acc" data-to-cal>이번 주 일정 ${week.length}건 ›</button><button class="lnk acc" data-to-team>팀 작업량 ›</button></div>`}</div>`;
   bindHead();
+  const lc = $('#view').querySelector('[data-to-cal]'); if (lc) lc.onclick = () => go('calendar');
+  const lt = $('#view').querySelector('[data-to-team]'); if (lt) lt.onclick = () => go('team');
   const paint = () => {
     if (!$('#agrid')) return;
     const q = F.q.trim().toLowerCase();
@@ -1446,39 +1505,46 @@ async function viewAccounts() {
   const si = $('#accSearch'); si.value = F.q; si.oninput = () => { F.q = si.value; paint(); };
   $('#view').querySelectorAll('[data-st]').forEach(b => b.onclick = () => { F.st = b.dataset.st; viewAccounts(); });
 }
-/* ---------- Team: 전 어카운트의 팀원·역할 배정 (team.json) ---------- */
+/* ---------- Team(레일): 사람 기준 화면. 배정을 바꾸면 각 어카운트 ⋯의 담당자 배정과 같은 team.json 이 바뀐다 ---------- */
 async function viewTeam() {
   await loadAccounts(); if (S.view !== 'team') return;
-  const acc = S.acc.accounts, total = acc.length * ROLE_CODES.length;
+  const acc = S.acc.accounts, total = acc.length * ROLE_CODES.length, roleKo = Object.fromEntries(ROLE_CARDS.map(r => [r.code, r.ko]));
   const filled = () => S.acc.accounts.reduce((n, a) => n + Object.keys(a.team || {}).length, 0);
-  const roleName = Object.fromEntries(ROLE_CARDS.map(r => [r.code, r]));
   const people = () => {
     const m = {};
-    S.acc.accounts.forEach(a => Object.entries(a.team || {}).forEach(([code, name]) => { (m[name] = m[name] || []).push({ acc: a.name, code }); }));
-    return Object.entries(m).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+    S.acc.accounts.forEach(a => ROLE_CODES.forEach(c => { const n = (a.team || {})[c]; if (n) (m[n] = m[n] || []).push({ id: a.id, acc: a.name, code: c, work: (a.work || {})[c] || 0 }); }));
+    return Object.entries(m).map(([name, list]) => ({ name, list, work: list.reduce((n, x) => n + x.work, 0) })).sort((a, b) => b.work - a.work || b.list.length - a.list.length || a.name.localeCompare(b.name));
   };
-  const peopleHtml = () => { const pp = people(); return pp.length ? pp.map(([n, list]) => `<div class="pp"><b>${esc(n)}</b><span class="muted">${list.length}개 역할</span><div class="row">${list.map(x => `<span class="chip">${esc(x.acc)} · ${x.code}</span>`).join('')}</div></div>`).join('')
-    : '<span class="muted">아직 배정된 팀원이 없어요. 위 표에 이름을 적으면 여기에 모입니다.</span>'; };
-  $('#view').innerHTML = `<div class="accounts-page">${pageHead('Team', '어카운트마다 누가 어떤 역할을 맡는지 한 화면에서 보고 바꿉니다.', false)}
-    ${acc.length ? `<div class="row"><span class="chip ok" id="tmFilled">배정 ${filled()} / ${total}</span><span class="muted" style="font-size:12.5px">이름을 적고 Enter(또는 다른 칸 클릭)를 누르면 저장돼요. 비우면 미배정입니다.</span></div>
-    <div class="tbl"><div class="tbl-in" style="min-width:860px"><div class="tr th" style="grid-template-columns:200px repeat(6,minmax(110px,1fr))"><span>어카운트</span>${ROLE_CODES.map(c => `<span>${c}<br><small>${esc(roleName[c].ko)}</small></span>`).join('')}</div>
+  const peopleHtml = () => { const pp = people(); return pp.length ? pp.map(p => `<div class="pp"><div class="row"><b>${esc(p.name)}</b><span class="spacer"></span><span class="chip ${p.work ? 'acc' : ''}">진행 중 작업 ${p.work}</span></div>
+      <small class="muted">담당 ${p.list.length}개 · ${p.list.map(x => x.acc).filter((v, i, a) => a.indexOf(v) === i).length}개 어카운트</small>
+      <div class="row">${p.list.map(x => `<button class="chip pcc" data-go-acc="${esc(x.id)}" title="${esc(x.acc)}의 ${x.code} (${esc(roleKo[x.code])})">${esc(x.acc)} · ${x.code}${x.work ? ` · ${x.work}` : ''}</button>`).join('')}</div></div>`).join('')
+    : '<span class="muted">아직 배정된 팀원이 없어요. 아래 "배정 편집"에 이름을 적으면 여기에 모입니다.</span>'; };
+  const loadHtml = () => { const t = ROLE_CODES.map(c => [c, S.acc.accounts.reduce((n, a) => n + ((a.work || {})[c] || 0), 0)]), mx = Math.max(1, ...t.map(x => x[1]));
+    return t.map(([c, n]) => `<div class="ldrow"><b>${c}</b><div class="bar"><div style="width:${Math.round(n / mx * 100)}%"></div></div><span>${n}</span></div>`).join(''); };
+  $('#view').innerHTML = `<div class="accounts-page">${pageHead('Team', '사람 기준으로 누가 어느 어카운트의 어떤 역할을 맡고, 지금 몇 가지를 진행 중인지 봅니다.', false)}
+    ${acc.length ? `<div class="row"><span class="chip ok" id="tmFilled">배정 ${filled()} / ${total}</span><span class="muted" style="font-size:12.5px">진행 중 작업 = 열린 리퀘스트 + 끝나지 않은 일정 + 컨펌 전 결과물(역할을 알 수 있는 것만)</span></div>
+    <div class="two"><section class="panel3 wide"><div class="p3h"><h2>팀원별 담당</h2><small>진행 중 작업이 많은 순</small></div><div class="people" id="people">${peopleHtml()}</div></section>
+      <section class="panel3"><div class="p3h"><h2>Team Workload</h2><small>역할별 진행 중인 작업</small></div><div id="workload">${loadHtml()}</div><small class="muted">한 역할에 일이 몰리면 막대가 길어져요.</small></section></div>
+    <details class="card pad" id="tmEdit" open><summary class="sec-t" style="cursor:pointer;margin:0">배정 편집 <small class="muted" style="font-weight:400">· 이름을 적고 Enter(또는 다른 칸 클릭)를 누르면 저장돼요. 비우면 미배정이에요. 어카운트 ⋯ 메뉴의 담당자 배정과 같은 데이터예요.</small></summary>
+      <div class="tbl" style="margin-top:12px"><div class="tbl-in" style="min-width:860px"><div class="tr th" style="grid-template-columns:200px repeat(6,minmax(110px,1fr))"><span>어카운트</span>${ROLE_CODES.map(c => `<span>${c}<br><small>${esc(roleKo[c])}</small></span>`).join('')}</div>
       ${acc.map(a => `<div class="tr" style="grid-template-columns:200px repeat(6,minmax(110px,1fr))"><span class="row"><span class="mono sm" style="background:${monoColor(a.id)}">${esc(a.name[0])}</span><b>${esc(a.name)}</b></span>
-        ${ROLE_CODES.map(c => `<span><input class="in sm tm" data-acc="${esc(a.id)}" data-role="${c}" value="${esc((a.team || {})[c] || '')}" placeholder="미배정" maxlength="40" aria-label="${esc(a.name)} ${c} 담당자"></span>`).join('')}</div>`).join('')}</div></div>
-    <section class="card pad"><div class="sec-t" style="margin:0 0 10px">팀원별 담당</div><div class="people" id="people">${peopleHtml()}</div></section>`
+        ${ROLE_CODES.map(c => `<span><input class="in sm tm" data-acc="${esc(a.id)}" data-role="${c}" value="${esc((a.team || {})[c] || '')}" placeholder="미배정" maxlength="40" aria-label="${esc(a.name)} ${c} 담당자"></span>`).join('')}</div>`).join('')}</div></div></details>`
     : '<div class="card pad empty-acc"><b>아직 어카운트가 없어요</b><p>어카운트를 만들면 여기서 팀을 배정할 수 있어요.</p><button class="btn pri" data-new-acc3>+ New Account</button></div>'}</div>`;
   bindHead();
   const n3 = $('#view').querySelector('[data-new-acc3]'); if (n3) n3.onclick = newAccountModal;
+  const bindChips = () => $('#view').querySelectorAll('[data-go-acc]').forEach(b => b.onclick = () => chooseClient(b.dataset.goAcc));
+  bindChips();
   $('#view').querySelectorAll('.tm').forEach(inp => inp.onchange = guard(async () => {
     const a = S.acc.accounts.find(x => x.id === inp.dataset.acc), team = {};
     $('#view').querySelectorAll(`.tm[data-acc="${inp.dataset.acc}"]`).forEach(i => { if (i.value.trim()) team[i.dataset.role] = i.value.trim(); });
     a.team = (await api('/api/team-set', { client: a.id, team })).team;
-    $('#tmFilled').textContent = `배정 ${filled()} / ${total}`; $('#people').innerHTML = peopleHtml(); toast('저장했어요.', 'ok');
+    $('#tmFilled').textContent = `배정 ${filled()} / ${total}`; $('#people').innerHTML = peopleHtml(); bindChips(); toast('저장했어요.', 'ok');
   }));
 }
 async function viewCalendarHome() {
   await loadAccounts(); if (S.view !== 'calendar') return;
-  $('#view').innerHTML = `<div class="accounts-page">${pageHead('Calendar', '모든 어카운트의 일정을 한곳에서 확인합니다.', false)}${S.st.clients.length ? homeCalHtml() : '<div class="card pad"><div class="empty"><b>등록된 어카운트가 없어요</b>All Accounts에서 + New Account 로 등록하세요.</div></div>'}</div>`;
-  bindHead(); if (S.st.clients.length) bindHomeCal();
+  $('#view').innerHTML = `<div class="accounts-page">${pageHead('Calendar', '모든 어카운트의 일정을 한곳에서 봅니다. 주간 보기가 기본이에요.', false)}${S.st.clients.length ? calHtml() : '<div class="card pad"><div class="empty"><b>등록된 어카운트가 없어요</b>All Accounts에서 + New Account 로 등록하세요.</div></div>'}</div>`;
+  bindHead(); if (S.st.clients.length) bindCal();
 }
 
 /* ---------- 명령 화면 ---------- */
@@ -1744,6 +1810,7 @@ function viewResults() {
       <button class="btn sm" id="cp">복사</button>
       ${it.state ? `<button class="btn sm pri" id="ap" ${can ? '' : 'disabled'} title="${can ? '' : 'AI 검수를 통과한 산출물만 컨펌할 수 있습니다'}">컨펌</button>` : ''}</div>
     ${it.state === 'approved' ? `<div class="viewer-b" style="padding-bottom:0"><div class="note info">${esc(it.by || '')} 님이 컨펌했습니다.</div></div>` : ''}
+    ${/^(copy|pdp)/i.test(it.name) && bannedHits(R.text).length ? `<div class="viewer-b" style="padding-bottom:0"><div class="note bad">Playbook 금지어가 들어 있어요: ${bannedHits(R.text).map(w => `<b>${esc(w)}</b>`).join(', ')}. 컨펌 전에 고쳐 주세요.</div></div>` : ''}
     <div class="viewer-b">${renderFile(it.name, R.text)}</div>`;
   $('#cp').onclick = () => navigator.clipboard.writeText(R.text).then(() => toast('복사했습니다.', 'ok'), () => toast('복사하지 못했습니다.', 'bad'));
   const ap = $('#ap'); if (ap) ap.onclick = () => approveModal(it);

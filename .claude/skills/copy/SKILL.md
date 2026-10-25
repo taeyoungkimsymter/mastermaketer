@@ -18,7 +18,7 @@ allowed-tools: Bash(py -3 scripts/*)
 
 ## 1. 준비
 1. `py -3 scripts/session.py set $client_id` (다른 고객사가 활성이면 중단·새 세션 안내)
-2. `clients/$client_id/brand.md`, `projects/{project_id}/brief.md` 를 읽는다.
+2. `clients/$client_id/brand.md`, `projects/{project_id}/brief.md` 를 읽는다. 또 `clients/$client_id/playbook/` 에서 **가장 높은 버전의 `playbook-vN.md`** 를 읽는다(톤앤매너·콘텐츠 기둥·금지어·법적 주의). 없으면 "Playbook 없음"을 가정·미확인에 적고, 있어도 비어 있는 항목(미정)은 지어내지 않는다. Playbook의 톤·금지어는 브랜드 규칙과 함께 전달서의 "적용할 브랜드·피드백 규칙"에 넣는다.
 3. 활성 규칙: `py -3 scripts/feedback.py active --client $client_id --project {project_id} --channel $channel` (승인된 규칙만 나온다. 후보는 쓰지 않는다.)
 4. 진행을 막는 핵심 정보(목적·제품·핵심 메시지·형식/분량)가 없으면 필요한 것만 묶어 질문. 임시 가정으로 진행 가능한 것은 가정으로 표시하고 초안 작성. 수치·근거 자료를 지어내지 않는다.
 5. 작업 ID: `py -3 scripts/taskid.py copy`

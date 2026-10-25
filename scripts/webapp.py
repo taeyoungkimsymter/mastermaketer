@@ -310,12 +310,14 @@ LIB_KINDS = {
     "requests": {"title": (100, True), "channel": (10, False), "role": (2, False), "due": (10, False),
                  "priority": (10, False), "received": (10, False)},
     "issues": {"date": (10, True), "type": (20, True), "content": (200, True), "action": (200, False)},
+    "campaigns": {"name": (80, True), "start": (10, False), "end": (10, False), "goal": (300, False), "message": (300, False), "deliverables": (400, False)},
 }
 REQ_CHANNELS = ("메일", "카톡", "미팅", "기타")
 REQ_STATUS = ("배정", "진행 중", "클로즈")
 ISSUE_TYPES = ("일정 딜레이", "소재 리젝", "성과 이상", "매체 정책·계정", "클라이언트 클레임")
 ISSUE_STATUS = ("해결", "조치 중", "미해결")
-UPDATABLE = {"requests": ("status", "role", "due", "priority"), "issues": ("status", "action"), "events": ("link", "role", "wait")}
+UPDATABLE = {"requests": ("status", "role", "due", "priority"), "issues": ("status", "action"), "events": ("link", "role", "wait"),
+             "campaigns": ("name", "start", "end", "goal", "message", "deliverables")}
 EVENT_TYPES = ("콘텐츠", "기획", "촬영", "회의", "기타")
 KEYWORD_TYPES = ("브랜드", "경쟁사", "일반")
 LIB_MAX = 300
@@ -379,7 +381,7 @@ def lib_change(client, kind, op, item, item_id):
                     raise AgencyError("이슈 유형이 올바르지 않습니다.")
                 if name == "role" and v and v not in ROLE_CODES:
                     raise AgencyError("역할 코드는 AE/AP/CW/AD/PD/MP 중 하나입니다.")
-                if name in ("date", "due", "received") and v:
+                if name in ("date", "due", "received", "start", "end") and v:
                     try:
                         datetime.date.fromisoformat(v)
                     except ValueError:
@@ -407,7 +409,7 @@ def lib_change(client, kind, op, item, item_id):
                 if k == "wait":
                     hit["wait"] = bool(v)
                     continue
-                v = clean_text(v, 300 if k == "link" else 200)
+                v = clean_text(v, LIB_KINDS[kind][k][0] if kind == "campaigns" else 300 if k == "link" else 200)
                 if k == "status":
                     if v not in (REQ_STATUS if kind == "requests" else ISSUE_STATUS):
                         raise AgencyError("상태 값이 올바르지 않습니다.")
@@ -417,7 +419,7 @@ def lib_change(client, kind, op, item, item_id):
                     raise AgencyError("역할 코드는 AE/AP/CW/AD/PD/MP 중 하나입니다.")
                 elif k == "priority" and v not in ("High", "Normal"):
                     raise AgencyError("우선순위는 High 또는 Normal 입니다.")
-                elif k == "due" and v:
+                elif k in ("due", "start", "end") and v:
                     try:
                         datetime.date.fromisoformat(v)
                     except ValueError:
@@ -539,39 +541,6 @@ def all_events():
     return out
 
 
-BRIEF_FIELDS = ("목적", "타깃", "제품·서비스", "핵심 메시지", "채널", "일정(마감)", "예산", "필수 문구", "금지 표현", "KPI 정의")
-
-
-def brief_file(client):
-    return common.project_dir(client, "general") / "brief.md"
-
-
-def read_brief(client):
-    """projects/general/brief.md 의 '- 항목: 값' 줄을 읽는다. 미정이면 빈 문자열."""
-    try:
-        text = brief_file(client).read_text(encoding="utf-8")
-    except OSError:
-        return {k: "" for k in BRIEF_FIELDS}
-    out = {}
-    for k in BRIEF_FIELDS:
-        m = re.search(r"^- " + re.escape(k) + r":[ \t]*(.*)$", text, re.M)
-        v = m.group(1).strip() if m else ""
-        out[k] = "" if v in ("", "미정") else v
-    return out
-
-
-def write_brief(client, fields):
-    f = brief_file(client)
-    text = f.read_text(encoding="utf-8")
-    for k in BRIEF_FIELDS:
-        v = clean_text((fields or {}).get(k), 200).replace("\n", " ") or "미정"
-        text = re.sub(r"^(- " + re.escape(k) + r":)[ \t]*.*$", lambda m, v=v: f"{m.group(1)} {v}", text, count=1, flags=re.M)
-    tmp = f.with_suffix(".tmp")
-    tmp.write_text(text, encoding="utf-8")
-    tmp.replace(f)
-    return read_brief(client)
-
-
 def new_account(account_id, name, char=None, desktop=False):
     """새 어카운트 폴더를 만든다(scaffold). 이미 열린 어카운트가 없을 때만 바로 세션에 연다."""
     account_id = clean_text(account_id, 32).lower()
@@ -662,7 +631,7 @@ def account_summary(c, today):
                     active_work += 1
                 elif state == "approved" and fname.lower().startswith("report"):
                     report_done = True
-    if brief_versions(cid):   # 브리프를 저장하면 Brief(1)를 지나 Concept(2)부터
+    if common.playbook_complete(common.playbook_latest(cid)[1])[0]:   # Playbook 필수 4섹션이 채워지면 Brief(1)를 지나 Concept(2)부터
         stage_no = max(stage_no, 2)
     phase_no = 6 if report_done else 5 if pending else 4 if active_work else stage_no
     lib = lib_load(cid)
@@ -690,7 +659,19 @@ def account_summary(c, today):
             month_cost = _f(sum((r["cost"] for r in mrows), Decimal(0)))
     except (AgencyError, OSError):
         pass
-    return {"id": cid, "name": name, "note": note.rstrip(")"), "month_cost": month_cost, "status": status, "phase": PHASES[phase_no - 1],
+    # 역할별 진행 중 작업: 열린 리퀘스트 + 끝나지 않은 일정 + 컨펌까지 안 끝난 결과물 (역할을 알 수 없는 것은 세지 않는다)
+    work = {c: 0 for c in ROLE_CODES}
+    for r in lib["requests"]:
+        if r.get("status") != "클로즈":
+            work[r.get("role") if r.get("role") in work else "AE"] += 1
+    for e in evs:
+        role = e.get("role") or EVENT_ROLE.get(e.get("type") or "", "")
+        if not e.get("done") and role in work:
+            work[role] += 1
+    for x in collect_deliverables(cid):
+        if x["state"] in ("draft", "needs_revision", "review_passed") and x["role"] in work:
+            work[x["role"]] += 1
+    return {"id": cid, "name": name, "note": note.rstrip(")"), "month_cost": month_cost, "work": work, "status": status, "phase": PHASES[phase_no - 1],
             "phase_no": phase_no, "pending": pending, "overdue": len(overdue) + len(req_late),
             "overdue_posts": len(overdue), "overdue_req": len(req_late),
             "post_done": sum(1 for e in posts if e.get("done")), "post_total": len(posts), "projects": projects,
@@ -1088,102 +1069,162 @@ def launch_buddy():
     return {"running": True, "started": True}
 
 
-# ---------- Brief (어카운트 공통 브리프: clients/{id}/brief/brief-v{N}.json + 같은 이름의 .md) ----------
-# 저장할 때마다 새 버전을 쌓고 기존 버전은 고치지 않는다. .md 는 AI 팀이 읽기 쉬운 사본이다.
+# ---------- Playbook (clients/{id}/playbook/playbook-v{N}.json + 같은 이름의 .md) ----------
+# 팀과 AI가 콘텐츠를 만들 때마다 기준으로 삼는 운영 가이드. 저장할 때마다 새 버전을 쌓고 기존 버전은 고치지 않는다.
+# .md 는 AI 팀이 읽기 쉬운 사본이다. 필수 4섹션(브랜드 기본·타깃·운영 컨셉·톤앤매너) + 선택 5섹션.
 
-BRIEF_TEXT = {"campaign": 80, "start": 10, "end": 10, "goal": 600, "target": 400, "budget": 80, "channels": 160,
-              "message": 400, "constraints": 600, "contact": 80}
-BRIEF_LABEL = {"campaign": "캠페인명", "period": "기간", "goal": "목표", "target": "타깃", "kpi": "KPI(지표·목표치)", "budget": "예산",
-               "channels": "채널", "message": "핵심 메시지", "deliverables": "산출물 목록", "links": "레퍼런스 링크",
-               "constraints": "제약 사항(금지 표현·법무 이슈 등)", "contact": "클라이언트 담당자"}
-
-
-def brief_dir(client):
-    return common.client_dir(client) / "brief"
+PB_SPEECH = ("존댓말", "반말")
+PB_EMOJI = ("사용", "가끔", "미사용")
+PB_CYCLE = ("주간", "격주", "월간")
 
 
-def brief_versions(client):
-    d = brief_dir(client)
+def playbook_dir(client):
+    return common.client_dir(client) / "playbook"
+
+
+def playbook_versions(client):
+    d = playbook_dir(client)
     out = []
     if d.is_dir():
-        for f in d.glob("brief-v*.json"):
-            m = re.fullmatch(r"brief-v(\d+)\.json", f.name)
+        for f in d.glob("playbook-v*.json"):
+            m = re.fullmatch(r"playbook-v(\d+)\.json", f.name)
             if m:
                 out.append(int(m.group(1)))
     return sorted(out)
 
 
-def read_brief_version(client, n):
-    f = brief_dir(client) / f"brief-v{n}.json"
+def read_playbook_version(client, n):
     try:
-        return json.loads(f.read_text(encoding="utf-8"))
+        return json.loads((playbook_dir(client) / f"playbook-v{n}.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        raise AgencyError("해당 버전의 브리프를 찾을 수 없습니다.")
+        raise AgencyError("해당 버전의 Playbook 을 찾을 수 없습니다.")
 
 
-def _brief_clean(fields):
-    f = fields if isinstance(fields, dict) else {}
-    out = {k: clean_text(f.get(k), n) for k, n in BRIEF_TEXT.items()}
-    for k in ("start", "end"):
-        if out[k]:
-            try:
-                datetime.date.fromisoformat(out[k])
-            except ValueError:
-                raise AgencyError("기간은 날짜(예: 2026-11-01)로 입력하세요.")
-    if out["start"] and out["end"] and out["end"] < out["start"]:
-        raise AgencyError("기간의 끝 날짜가 시작 날짜보다 빠릅니다.")
-    kpi = []
-    for r in (f.get("kpi") or [])[:10]:
-        m, t = clean_text((r or {}).get("metric"), 60), clean_text((r or {}).get("target"), 60)
-        if m or t:
-            kpi.append({"metric": m, "target": t})
-    out["kpi"] = kpi
-    out["deliverables"] = [x for x in (clean_text(v, 100) for v in (f.get("deliverables") or [])[:20]) if x]
+def _t(v, n):
+    return clean_text(v, n)
+
+
+def _list(v, n, maxn, text=60):
+    return [x for x in (_t(i, text) for i in (v or [])[:maxn]) if x] if isinstance(v, list) else []
+
+
+def _num(v, lo, hi, what):
+    v = _t(v, 6)
+    if v == "":
+        return None
+    try:
+        x = int(v)
+    except ValueError:
+        raise AgencyError(f"{what}은 숫자로 입력하세요.")
+    if not lo <= x <= hi:
+        raise AgencyError(f"{what}은 {lo}~{hi} 사이여야 합니다.")
+    return x
+
+
+def _pb_clean(f):
+    f = f if isinstance(f, dict) else {}
+    g = lambda k: f.get(k) if isinstance(f.get(k), dict) else {}  # noqa: E731
+    b, t, k, tn, po, vi, ch, kp, ru = (g(x) for x in ("brand", "target", "concept", "tone", "positioning", "visual", "channels", "kpi", "rules"))
+    out = {"brand": {"name": _t(b.get("name"), 40), "category": _t(b.get("category"), 40), "tagline": _t(b.get("tagline"), 100), "products": _t(b.get("products"), 200)}}
+    if not out["brand"]["name"]:
+        raise AgencyError("브랜드명을 입력하세요.")
+    core = []
+    for r in (t.get("core") or [])[:3]:
+        r = r if isinstance(r, dict) else {}
+        row = {"age": _t(r.get("age"), 30), "situation": _t(r.get("situation"), 120), "pain": _t(r.get("pain"), 160)}
+        if any(row.values()):
+            core.append(row)
+    out["target"] = {"core": core, "secondary": _t(t.get("secondary"), 200)}
+    pillars, total = [], 0
+    for r in (k.get("pillars") or [])[:4]:
+        r = r if isinstance(r, dict) else {}
+        row = {"name": _t(r.get("name"), 40), "desc": _t(r.get("desc"), 160), "weight": _num(r.get("weight"), 0, 100, "콘텐츠 기둥 비중")}
+        if row["name"] or row["desc"] or row["weight"] is not None:
+            pillars.append(row)
+            total += row["weight"] or 0
+    if total > 100:
+        raise AgencyError(f"콘텐츠 기둥 비중의 합이 {total}% 입니다. 100% 이하로 맞춰 주세요.")
+    out["concept"] = {"line": _t(k.get("line"), 120), "pillars": pillars}
+    speech, emoji = _t(tn.get("speech"), 10), _t(tn.get("emoji"), 10)
+    if speech and speech not in PB_SPEECH or emoji and emoji not in PB_EMOJI:
+        raise AgencyError("말투·이모지 값이 올바르지 않습니다.")
+    out["tone"] = {"keywords": _list(tn.get("keywords"), 3, 3, 20), "speech": speech, "emoji": emoji,
+                   "do": _list(tn.get("do"), 2, 2, 160), "dont": _list(tn.get("dont"), 2, 2, 160)}
+    out["positioning"] = {"competitors": _list(po.get("competitors"), 3, 3, 40), "diff": _t(po.get("diff"), 200), "promise": _t(po.get("promise"), 160)}
     links = []
-    for v in (f.get("links") or [])[:20]:
-        v = clean_text(v, 300)
+    for v in (vi.get("links") or [])[:10]:
+        v = _t(v, 300)
         if v:
             if not re.match(r"^https?://\S+$", v):
                 raise AgencyError("레퍼런스 링크는 http:// 또는 https:// 로 시작해야 합니다.")
             links.append(v)
-    out["links"] = links
-    if not out["campaign"]:
-        raise AgencyError("캠페인명을 입력하세요.")
+    out["visual"] = {"color": _t(vi.get("color"), 60), "mood": _t(vi.get("mood"), 100), "links": links, "avoid": _t(vi.get("avoid"), 200)}
+    rows = []
+    for r in (ch.get("rows") or [])[:8]:
+        r = r if isinstance(r, dict) else {}
+        row = {"channel": _t(r.get("channel"), 30), "role": _t(r.get("role"), 100), "weekly": _num(r.get("weekly"), 0, 50, "주간 업로드 횟수"), "format": _t(r.get("format"), 60)}
+        if row["channel"] or row["role"] or row["format"] or row["weekly"] is not None:
+            rows.append(row)
+    out["channels"] = {"rows": rows}
+    krows = []
+    for r in (kp.get("rows") or [])[:10]:
+        r = r if isinstance(r, dict) else {}
+        row = {"channel": _t(r.get("channel"), 30), "metric": _t(r.get("metric"), 40), "target": _t(r.get("target"), 40)}
+        if any(row.values()):
+            krows.append(row)
+    cyc = _t(kp.get("cycle"), 10)
+    if cyc and cyc not in PB_CYCLE:
+        raise AgencyError("점검 주기 값이 올바르지 않습니다.")
+    out["kpi"] = {"rows": krows, "cycle": cyc}
+    banned = ru.get("banned")
+    if isinstance(banned, str):
+        banned = re.split(r"[,\n]", banned)
+    out["rules"] = {"banned": list(dict.fromkeys(_list(banned, 30, 30, 30))), "legal": _t(ru.get("legal"), 300), "competitor_rule": _t(ru.get("competitor_rule"), 200)}
     return out
 
 
-def _brief_md(client, n, d, saved_at):
+def _pb_md(client, n, d, saved_at):
     v = lambda x: x if x else "미정"  # noqa: E731
-    period = f"{d['start']} ~ {d['end']}" if d["start"] or d["end"] else ""
-    L = [f"# 브리프 v{n}: {d['campaign']}", "",
-         f"> client_id: {client} · 저장 {saved_at} · 모르는 항목은 \"미정\". 근거 없는 수치는 적지 않습니다.", "",
-         f"- 캠페인명: {d['campaign']}", f"- 기간: {v(period)}", f"- 목표: {v(d['goal'])}", f"- 타깃: {v(d['target'])}", "- KPI(지표·목표치):"]
-    L += [f"  - {k['metric'] or '미정'}: {k['target'] or '미정'}" for k in d["kpi"]] or ["  - 미정"]
-    L += [f"- 예산: {v(d['budget'])}", f"- 채널: {v(d['channels'])}", f"- 핵심 메시지: {v(d['message'])}", "- 산출물 목록:"]
-    L += [f"  - {x}" for x in d["deliverables"]] or ["  - 미정"]
-    L += ["- 레퍼런스 링크:"] + ([f"  - {x}" for x in d["links"]] or ["  - 미정"])
-    L += [f"- 제약 사항: {v(d['constraints'])}", f"- 클라이언트 담당자: {v(d['contact'])}", ""]
+    b, t, k, tn, po, vi, ch, kp, ru = (d[x] for x in ("brand", "target", "concept", "tone", "positioning", "visual", "channels", "kpi", "rules"))
+    L = [f"# Playbook v{n}: {b['name']}", "", f"> client_id: {client} · 저장 {saved_at} · 콘텐츠를 만들 때마다 이 문서를 기준으로 삼는다. 모르는 항목은 \"미정\"이며 지어내지 않는다.", "",
+         "## 브랜드 기본", f"- 브랜드명: {b['name']}", f"- 카테고리: {v(b['category'])}", f"- 한 줄 소개: {v(b['tagline'])}", f"- 핵심 제품·서비스: {v(b['products'])}", "",
+         "## 타깃", "- 핵심 페르소나:"]
+    L += [f"  - {r['age'] or '미정'} / 상황: {r['situation'] or '미정'} / 고민: {r['pain'] or '미정'}" for r in t["core"]] or ["  - 미정"]
+    L += [f"- 보조 타깃: {v(t['secondary'])}", "", "## 운영 컨셉", f"- 컨셉 한 줄: {v(k['line'])}", "- 콘텐츠 기둥:"]
+    L += [f"  - {r['name'] or '미정'}" + (f" ({r['weight']}%)" if r["weight"] is not None else "") + (f" — {r['desc']}" if r["desc"] else "") for r in k["pillars"]] or ["  - 미정"]
+    L += ["", "## 톤앤매너", f"- 성격 키워드: {', '.join(tn['keywords']) or '미정'}", f"- 말투: {v(tn['speech'])}", f"- 이모지: {v(tn['emoji'])}", "- 이렇게 쓴다:"]
+    L += [f"  - {x}" for x in tn["do"]] or ["  - 미정"]
+    L += ["- 이렇게 안 쓴다:"] + ([f"  - {x}" for x in tn["dont"]] or ["  - 미정"])
+    L += ["", "## 포지셔닝 (선택)", f"- 경쟁 브랜드: {', '.join(po['competitors']) or '미정'}", f"- 차별점: {v(po['diff'])}", f"- 브랜드 약속: {v(po['promise'])}",
+          "", "## 비주얼 가이드 (선택)", f"- 메인 컬러: {v(vi['color'])}", f"- 무드 키워드: {v(vi['mood'])}", f"- 레퍼런스 링크: {', '.join(vi['links']) or '미정'}", f"- 피해야 할 표현: {v(vi['avoid'])}",
+          "", "## 채널 운영 (선택)"]
+    L += [f"- {r['channel'] or '채널 미정'}: 역할 {v(r['role'])} / 주간 업로드 {r['weekly'] if r['weekly'] is not None else '미정'}회 / 주력 포맷 {v(r['format'])}" for r in ch["rows"]] or ["- 미정"]
+    L += ["", "## 목표·KPI (선택)"] + ([f"- {r['channel'] or '전체'} · {r['metric'] or '미정'}: {r['target'] or '미정'}" for r in kp["rows"]] or ["- 미정"]) + [f"- 점검 주기: {v(kp['cycle'])}"]
+    L += ["", "## 금지·주의 (선택)", f"- 금지어: {', '.join(ru['banned']) or '미정'}", f"- 법적·심의 주의사항: {v(ru['legal'])}", f"- 경쟁사 언급 규칙: {v(ru['competitor_rule'])}", ""]
     return "\n".join(L)
 
 
-def save_brief(client, fields):
-    d = _brief_clean(fields)
-    now = common.now_kst()
-    d["saved_at"] = now.isoformat(timespec="seconds")
-    p = common.write_versioned(brief_dir(client), "brief", ".json", json.dumps(d, ensure_ascii=False, indent=2))
-    n = int(re.fullmatch(r"brief-v(\d+)\.json", p.name).group(1))
+def save_playbook(client, fields):
+    d = _pb_clean(fields)
+    d["saved_at"] = common.now_kst().isoformat(timespec="seconds")
+    p = common.write_versioned(playbook_dir(client), "playbook", ".json", json.dumps(d, ensure_ascii=False, indent=2))
+    n = int(re.fullmatch(r"playbook-v(\d+)\.json", p.name).group(1))
     md = p.with_suffix(".md")
     if not md.exists():
-        md.write_text(_brief_md(client, n, d, d["saved_at"]), encoding="utf-8")
+        md.write_text(_pb_md(client, n, d, d["saved_at"]), encoding="utf-8")
     return n
 
 
-def brief_payload(client, n=None):
-    vs = brief_versions(client)
-    out = {"versions": [{"n": i, "saved_at": read_brief_version(client, i).get("saved_at", "")} for i in vs], "count": len(vs)}
+def playbook_payload(client, n=None):
+    vs = playbook_versions(client)
+    out = {"versions": [{"n": i, "saved_at": read_playbook_version(client, i).get("saved_at", "")} for i in vs], "count": len(vs)}
     pick = n if n in vs else (vs[-1] if vs else None)
     out["n"] = pick
-    out["data"] = read_brief_version(client, pick) if pick else None
+    out["data"] = read_playbook_version(client, pick) if pick else None
+    ok, sec = common.playbook_complete(out["data"])
+    out["complete"], out["sections"] = ok, sec
+    lat = common.playbook_latest(client)[1]
+    out["latest_complete"] = common.playbook_complete(lat)[0] if lat else False
     return out
 
 
@@ -1344,17 +1385,12 @@ class Handler(BaseHTTPRequestHandler):
             return launch_buddy()
         if path == "/api/new-account" and method == "POST":
             return new_account(b.get("id"), b.get("name"), b.get("char"), b.get("desktop"))
-        if path == "/api/brief-v":
+        if path == "/api/playbook":
             c = need_active()
             if method == "POST":
-                n = save_brief(c, b.get("fields"))
-                return dict(brief_payload(c, n), saved=n)
-            return brief_payload(c, int(q["v"]) if (q.get("v") or "").isdigit() else None)
-        if path == "/api/brief":
-            c = need_active()
-            if method == "POST":
-                return {"fields": write_brief(c, b.get("fields"))}
-            return {"fields": read_brief(c), "labels": list(BRIEF_FIELDS)}
+                n = save_playbook(c, b.get("fields"))
+                return dict(playbook_payload(c, n), saved=n)
+            return playbook_payload(c, int(q["v"]) if (q.get("v") or "").isdigit() else None)
         if path == "/api/buddy-char" and method == "POST":
             return write_buddy(need_active(), clean_text(b.get("char"), 10) or None, b.get("desktop"))
         if path == "/api/team-set" and method == "POST":

@@ -744,3 +744,36 @@ small.ok{color:var(--ok)}small.warn{color:var(--warn)}small.late{color:var(--lat
 .lrow.k2 .in:first-child{flex:1.4}
 .brief textarea.in{min-height:64px}
 .th .lnk.acc{margin-left:10px;padding:0}
+
+/* ---------- Playbook ---------- */
+.playbook .pbs{border-radius:16px}
+.pbh{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.pbh h2{font-size:16px;flex:1}
+.pbs>p.muted{margin:2px 0 12px;font-size:13px}
+.pbopt summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.pbopt summary::-webkit-details-marker{display:none}
+.pbopt summary h2{font-size:16px;flex:1}
+.pbopt[open] summary{margin-bottom:6px}
+.lrow.k3 .in{flex:1}.lrow.k3p .in{flex:1}.lrow.k4 .in{flex:1}
+.lrow .in.w{flex:0 0 84px}
+.pbsum{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:13px}
+.pbsum .lnk{margin-left:auto}
+.cswatch{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--border);margin-right:2px}
+
+/* ---------- 레일 정리: 툴팁 · 링크 한 줄 · 주간 캘린더 ---------- */
+.rail{overflow:visible;z-index:30}
+.rail [data-tip]{position:relative}
+.rail [data-tip]::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);white-space:nowrap;background:#0E0F1C;color:#fff;font:500 12px var(--font);padding:6px 10px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:40}
+.rail [data-tip]:hover::after,.rail [data-tip]:focus-visible::after{opacity:1}
+.linkrow{display:flex;flex-wrap:wrap;gap:6px 24px;padding:4px 2px}
+.linkrow .lnk.acc{padding:0;height:auto;font-size:14px}
+.calbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+.calbar .seg{padding:3px;border-radius:9px}
+.calbar .seg-b{height:30px;padding:0 12px;border-radius:7px;font-size:12px}
+.calbar .mth{min-width:120px;text-align:center}
+.home-cal .calbar .next svg{transform:scaleX(-1)}
+button.wk-i{text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer}
+button.wk-i:hover{border-color:var(--accent)}
+.wk-day{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.pcc{border:0;cursor:pointer}
+.pcc:hover{background:var(--accent-soft);color:var(--accent)}

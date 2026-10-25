@@ -158,6 +158,46 @@ def section_bullets(text: str, heading: str):
     return out
 
 
+# ---------- Playbook (clients/{id}/playbook/playbook-v{N}.json) ----------
+
+def playbook_latest(client_id):
+    """가장 높은 버전의 Playbook -> (번호, dict). 없으면 (None, None)."""
+    d = client_dir(client_id) / "playbook"
+    best = 0
+    if d.is_dir():
+        for f in d.glob("playbook-v*.json"):
+            m = re.fullmatch(r"playbook-v(\d+)\.json", f.name)
+            if m:
+                best = max(best, int(m.group(1)))
+    if not best:
+        return None, None
+    try:
+        return best, json.loads((d / f"playbook-v{best}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None, None
+
+
+def playbook_bans(client_id):
+    """Playbook '금지·주의'의 금지어 목록(없으면 빈 리스트)."""
+    _, d = playbook_latest(client_id)
+    return [w for w in ((d or {}).get("rules") or {}).get("banned", []) if w]
+
+
+def playbook_complete(d):
+    """필수 4섹션(브랜드 기본·타깃·운영 컨셉·톤앤매너)이 모두 채워졌는지와 섹션별 결과."""
+    d = d or {}
+    b, t, k, tn = d.get("brand") or {}, d.get("target") or {}, d.get("concept") or {}, d.get("tone") or {}
+    core = (t.get("core") or [{}])[0] if t.get("core") else {}
+    sec = {
+        "brand": all(b.get(x) for x in ("name", "category", "tagline", "products")),
+        "target": all(core.get(x) for x in ("age", "situation", "pain")),
+        "concept": bool(k.get("line")) and sum(1 for p in (k.get("pillars") or []) if p.get("name")) >= 3,
+        "tone": sum(1 for w in (tn.get("keywords") or []) if w) >= 3 and bool(tn.get("speech")) and bool(tn.get("emoji"))
+        and sum(1 for w in (tn.get("do") or []) if w) >= 2 and sum(1 for w in (tn.get("dont") or []) if w) >= 2,
+    }
+    return all(sec.values()), sec
+
+
 def read_brand(client_id) -> str:
     f = client_dir(client_id) / "brand.md"
     return f.read_text(encoding="utf-8") if f.exists() else ""

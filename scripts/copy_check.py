@@ -42,6 +42,7 @@ def load_spec(channel, ad_format=None):
 def check(client, rows, channel, ad_format=None, extra_ban=(), spec=None):
     brand = common.read_brand(client)
     bans = common.section_bullets(brand, "금지 표현") + list(extra_ban)
+    bans += [w for w in common.playbook_bans(client) if w not in bans]   # Playbook '금지·주의'의 금지어
     musts = common.section_bullets(brand, "필수 문구")
     spec = spec or load_spec(channel, ad_format)
     out = {"channel": channel, "ad_format": (spec or {}).get("ad_format", ad_format), "spec": None, "items": [], "summary": {}}
