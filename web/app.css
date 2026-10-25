@@ -735,3 +735,12 @@ small.ok{color:var(--ok)}small.warn{color:var(--warn)}small.late{color:var(--lat
 .people{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .pp{border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .pp .row{flex-wrap:wrap;gap:6px}
+
+/* ---------- Brief 양식 ---------- */
+.brief .form{gap:14px}
+.rows{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.lrow{display:flex;gap:6px;align-items:center}
+.lrow .in{flex:1;min-width:0}
+.lrow.k2 .in:first-child{flex:1.4}
+.brief textarea.in{min-height:64px}
+.th .lnk.acc{margin-left:10px;padding:0}

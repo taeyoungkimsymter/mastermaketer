@@ -203,7 +203,7 @@ const PLATFORMS = [
 const TABS = [
   { id: 'overview', label: 'Overview', en: 'Overview', code: '', desc: '어카운트 팀의 진행 상황을 한눈에 봅니다.', subs: [] },
   { id: 'account', label: 'Account', en: 'Account', code: 'AE', desc: '클라이언트 리퀘스트를 팀에 배정하고, 포스팅과 이슈를 챙깁니다.',
-    subs: [['cal', 'Content Calendar', 'cal'], ['req', 'Client Request', 'requests'], ['issue', 'Issue Log', 'issues'], ['meeting', 'Meeting Note', 'meeting']] },
+    subs: [['brief', 'Brief', 'brief'], ['cal', 'Content Calendar', 'cal'], ['req', 'Client Request', 'requests'], ['issue', 'Issue Log', 'issues'], ['meeting', 'Meeting Note', 'meeting']] },
   { id: 'strategy', label: 'Strategy', en: 'Strategy', code: 'AP', desc: '레퍼런스·경쟁사·키워드를 모아 방향을 잡습니다.',
     subs: [['references', 'Reference Board', 'lib-references'], ['competitors', 'Competitor Watch', 'lib-competitors'], ['keywords', 'Keyword Insight', 'lib-keywords']] },
   { id: 'copy', label: 'Copy', en: 'Copy', code: 'CW', desc: '카피 3안과 상세페이지 카피를 씁니다.',
@@ -318,7 +318,7 @@ function renderSide() {
   $('#swNew').onclick = () => { closeSw(); newAccountModal(); };
   $('#acctList').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { const t = TABS.find(x => x.id === b.dataset.t); goSub(t.id, t.subs.length ? t.subs[0][0] : ''); });
 }
-const chipCount = k => ({ cal: S.lib.events.length, req: S.lib.requests.length, issue: S.lib.issues.length }[k] ?? '');
+const chipCount = k => ({ brief: S.brief && S.brief.count ? `v${S.brief.versions[S.brief.versions.length - 1].n}` : '', cal: S.lib.events.length, req: S.lib.requests.length, issue: S.lib.issues.length }[k] ?? '');
 /* My Tasks: 이 역할에 배정된 열린 리퀘스트 (설계서 §4) */
 function myTasksHtml(code) {
   const mine = S.lib.requests.filter(r => r.role === code && r.status !== '클로즈').sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
@@ -342,11 +342,12 @@ function renderAcctHead() {
       <button class="btn" data-theme-toggle2>${document.documentElement.dataset.theme === 'dark' ? '라이트 모드' : '다크 모드'}</button>
       <div class="more"><button class="btn icon" data-more aria-haspopup="menu" aria-expanded="false" aria-label="더보기 (피드백 규칙·결과물)">⋯</button>
         <div class="menu" role="menu" hidden><button role="menuitem" data-act="team">담당자 배정</button><button role="menuitem" data-act="buddy">캐릭터 설정</button><button role="menuitem" data-act="settings">설정 · 대표 이름</button><hr>${MORE.map(m => `<button role="menuitem" data-m="${m[2]}">${esc(m[1])}${m[0] === 'feedback' && cand ? `<span class="cnt">${cand}</span>` : ''}</button>`).join('')}</div></div></div></header>
-    ${desc ? `<div class="th"><span class="muted">${esc(desc)}</span></div>` : ''}
+    ${desc ? `<div class="th"><span class="muted">${esc(desc)}</span>${tab && ['strategy', 'copy', 'art'].includes(tab.id) ? `<button class="lnk acc" data-brief>${S.brief && S.brief.count ? `브리프 보기 (v${S.brief.versions[S.brief.versions.length - 1].n}) ›` : '브리프 작성하기 ›'}</button>` : ''}</div>` : ''}
     ${tab && tab.subs.length ? `<div class="chips">${tab.subs.map(([k, l]) => { const n = chipCount(k); return `<button class="fchip" data-c="${k}" aria-pressed="${k === S.sub}">${esc(l)}${n === '' ? '' : ` <span class="n">${n}</span>`}</button>`; }).join('')}</div>` : ''}
     ${tab && tab.code ? myTasksHtml(tab.code) : ''}`;
   el.querySelector('[data-back]').onclick = () => go('welcome');
   el.querySelector('[data-pend]').onclick = () => openDrawer('ALL');
+  const bl = el.querySelector('[data-brief]'); if (bl) bl.onclick = () => goSub('account', 'brief');
   el.querySelector('[data-theme-toggle2]').onclick = toggleTheme;
   const mb = el.querySelector('[data-more]'), mn = el.querySelector('.menu');
   const closeMenu = () => { mn.hidden = true; mb.setAttribute('aria-expanded', 'false'); document.removeEventListener('click', outside); };
@@ -404,8 +405,8 @@ async function go(v, tab, sub) {
   const loc = tab ? [tab, sub] : locate(v);
   if (loc && S.st.active) [S.tab, S.sub] = loc; else S.tab = S.sub = null;
   if (S.detail) { S.detail = null; renderDetail(); }
-  if (S.st.active && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview()]);
-  if (v === 'overview') await Promise.all([loadPerfWeek(), loadBriefState()]);
+  if (S.st.active && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview(), loadBriefState()]);
+  if (v === 'overview') await loadPerfWeek();
   if (v === 'results') await loadResults();
   if (v === 'feedback') { try { S.fb = (await api('/api/feedback')).items; } catch (e) { toast(e.message, 'bad'); } }
   render(); window.scrollTo(0, 0);
@@ -423,6 +424,7 @@ function render() {
   if (v === 'content-perf') return viewContentPerf();
   if (v === 'cal') return viewCal();
   if (v === 'requests') return viewRequests();
+  if (v === 'brief') return viewBrief();
   if (v === 'issues') return viewIssues();
   if (v === 'adstudio') return viewAdStudio();
   if (v === 'pdp') return viewPdp();
@@ -496,29 +498,13 @@ function newAccountModal() {
     draw();
   });
 }
-async function loadBriefState() { try { S.brief = (await api('/api/brief')).fields; } catch { S.brief = {}; } }
-const BRIEF_HINT = { 목적: '예: 가을 신제품 인지도', 타깃: '예: 20~30대 직장인', '제품·서비스': '', '핵심 메시지': '', 채널: '예: 인스타그램, 블로그', '일정(마감)': '예: 11월 30일', 예산: '모르면 비워 두세요', '필수 문구': '', '금지 표현': '', 'KPI 정의': '전환의 정의 포함' };
-async function briefModal() {
-  await loadBriefState();
-  const labels = Object.keys(BRIEF_HINT);
-  modal(`<h3>브리프 작성</h3><p class="muted">캠페인 목표·예산·기간을 정리합니다. 모르는 항목은 비워 두면 "미정"으로 저장돼요. 근거 없는 수치는 적지 마세요.</p>
-    <form id="bf" class="form" autocomplete="off">${labels.map(l => `<label class="field" style="margin-top:8px"><span class="lbl">${esc(l)}</span><input class="in" name="${esc(l)}" maxlength="200" value="${esc((S.brief || {})[l] || '')}" placeholder="${esc(BRIEF_HINT[l])}"></label>`).join('')}
-      <div class="row end" style="margin-top:14px"><button class="btn" type="button" id="m-no">취소</button><button class="btn pri" type="submit">저장</button></div></form>`,
-  m => {
-    $('#m-no', m).onclick = closeModal;
-    $('#bf', m).onsubmit = guard(async e => {
-      e.preventDefault(); const fields = {}; labels.forEach(l => { fields[l] = e.target.elements[l].value.trim(); });
-      S.brief = (await api('/api/brief', { fields })).fields; closeModal(); toast('브리프를 저장했습니다.', 'ok');
-      if (S.view === 'overview') viewAcctOverview();
-    });
-  });
-}
+async function loadBriefState() { try { S.brief = await api('/api/brief-v'); } catch { S.brief = { count: 0, versions: [] }; } }
 function checklistSteps() {
   const acc = accOf(S.st.active) || {}, a = S.st.active;
   return [
     { title: '담당자 배정', desc: 'AE · AP · CW · AD · PD · MP에 팀원 이름을 넣어요', cta: '배정하기', done: Object.keys(acc.team || {}).length > 0, act: teamModal },
     { title: '버디 캐릭터 붙이기', desc: '이 어카운트를 지켜볼 캐릭터를 골라요. 안 붙여도 앱 안 알림은 똑같이 보여요.', cta: '고르기', done: false, optional: true, hide: !!acc.char, act: buddyModal },
-    { title: '브리프 작성', desc: '캠페인 목표 · 예산 · 기간을 정리해요', cta: '작성하기', done: !!(S.brief && S.brief['목적']), act: briefModal },
+    { title: '브리프 작성', desc: '캠페인 목표 · 예산 · 기간을 정리해요. 저장하면 Phase가 Concept로 넘어가요', cta: '작성하기', done: !!(S.brief && S.brief.count), act: () => goSub('account', 'brief') },
     { title: '첫 포스팅 일정 추가', desc: 'Account › Content Calendar에서 일정을 넣어요', cta: '일정 추가', done: S.lib.events.some(e => e.type === '콘텐츠'), act: async () => { S.calMode = 'list'; await goSub('account', 'cal'); postModal(); } },
     { title: '광고 데이터 연결', desc: '매체 CSV를 data/raw에 넣으면 Performance가 채워져요', cta: '방법 보기', done: (S.ws.inputs.raw || []).some(f => /\.(csv|xlsx|xlsm)$/i.test(f)), act: () => goSub('performance', 'media') },
   ].filter(x => !x.hide).map((x, i) => ({ ...x, no: i + 1, a }));
@@ -782,6 +768,61 @@ function reviseModal(it) {
   });
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.drawer && $('#modal').hidden) closeDrawer(); });
+
+/* ---------- Brief (Account › Brief): 저장할 때마다 새 버전(v1, v2…)으로 쌓인다 ---------- */
+const BRIEF_CHANNELS = ['인스타그램', '블로그', '유튜브', '메타 광고', '구글 광고', '틱톡'];
+async function viewBrief() {
+  const P = await api('/api/brief-v' + (S.briefSel ? `?v=${S.briefSel}` : '')); S.brief = P;
+  if (S.view !== 'brief') return;
+  const d = P.data || { campaign: '', start: '', end: '', goal: '', target: '', kpi: [], budget: '', channels: '', message: '', deliverables: [], links: [], constraints: '', contact: '' };
+  const latest = P.versions.length ? P.versions[P.versions.length - 1].n : 0, viewing = P.n || 0;
+  const chSel = new Set((d.channels || '').split(/\s*,\s*/).filter(Boolean));
+  const list = (name, arr, ph, type) => `<div class="rows" data-list="${name}">${(arr.length ? arr : ['']).map(v => `<div class="lrow"><input class="in" ${type ? `type="${type}"` : ''} value="${esc(v)}" placeholder="${esc(ph)}" maxlength="300"><button type="button" class="lnk" data-del aria-label="줄 삭제">✕</button></div>`).join('')}</div><button type="button" class="btn sm" data-add="${name}">+ 추가</button>`;
+  const kpis = d.kpi.length ? d.kpi : [{ metric: '', target: '' }];
+  $('#view').innerHTML = `<div class="stack brief">
+    <div class="fbar"><b class="mth">${latest ? `브리프 v${viewing}` : '새 브리프'}</b>${latest ? `<select class="in sm" id="bVer" style="width:auto" aria-label="버전 선택">${P.versions.slice().reverse().map(x => `<option value="${x.n}" ${x.n === viewing ? 'selected' : ''}>v${x.n}${x.n === latest ? ' (최신)' : ''} · ${esc((x.saved_at || '').slice(5, 16).replace('T', ' '))}</option>`).join('')}</select>` : '<span class="muted">처음엔 빈 양식이에요. 아는 만큼만 적고 저장하세요.</span>'}
+      <span class="spacer"></span><button class="btn pri" id="bSave">${latest ? `새 버전(v${latest + 1})으로 저장` : '브리프 저장 (v1)'}</button></div>
+    ${latest && viewing !== latest ? `<div class="note info">v${viewing}을 보고 있어요. 저장하면 이 내용을 바탕으로 v${latest + 1}이 새로 쌓여요(기존 버전은 그대로).</div>` : ''}
+    <form class="card pad form" id="bForm" autocomplete="off">
+      <label class="field"><span class="lbl">캠페인명<span class="req">*</span></span><input class="in" name="campaign" maxlength="80" value="${esc(d.campaign)}" placeholder="예: 가을 신제품 런칭"></label>
+      <div class="grid2"><label class="field"><span class="lbl">기간 시작</span><input class="in" type="date" name="start" value="${esc(d.start)}"></label><label class="field"><span class="lbl">기간 끝</span><input class="in" type="date" name="end" value="${esc(d.end)}"></label></div>
+      <label class="field"><span class="lbl">목표</span><textarea class="in" name="goal" maxlength="600" placeholder="이 캠페인으로 이루고 싶은 것">${esc(d.goal)}</textarea></label>
+      <label class="field"><span class="lbl">타깃</span><textarea class="in" name="target" maxlength="400" placeholder="누구에게 말하나요?">${esc(d.target)}</textarea></label>
+      <div class="field"><span class="lbl">KPI (지표 · 목표치)</span><div class="rows" data-list="kpi">${kpis.map(k => `<div class="lrow k2"><input class="in" value="${esc(k.metric)}" placeholder="지표 (예: 전환수)" maxlength="60"><input class="in" value="${esc(k.target)}" placeholder="목표치 (예: 주 50건)" maxlength="60"><button type="button" class="lnk" data-del aria-label="줄 삭제">✕</button></div>`).join('')}</div><button type="button" class="btn sm" data-add="kpi">+ 지표 추가</button><span class="hint">목표치를 모르면 비워 두세요. 근거 없는 숫자는 적지 않아요.</span></div>
+      <label class="field"><span class="lbl">예산</span><input class="in" name="budget" maxlength="80" value="${esc(d.budget)}" placeholder="캠페인 예산 (계약 금액이 아니에요)"></label>
+      <div class="field"><span class="lbl">채널</span><div class="row" style="flex-wrap:wrap;gap:6px">${BRIEF_CHANNELS.map(c => `<button type="button" class="fchip" data-chan="${c}" aria-pressed="${chSel.has(c)}">${c}</button>`).join('')}</div><input class="in" name="channels" maxlength="160" value="${esc(d.channels)}" placeholder="쉼표로 구분 (위 버튼으로도 고를 수 있어요)" style="margin-top:8px"></div>
+      <label class="field"><span class="lbl">핵심 메시지</span><textarea class="in" name="message" maxlength="400" placeholder="한 문장으로">${esc(d.message)}</textarea></label>
+      <div class="field"><span class="lbl">산출물 목록</span>${list('deliverables', d.deliverables, '예: 인스타 카드뉴스 4종')}</div>
+      <div class="field"><span class="lbl">레퍼런스 링크</span>${list('links', d.links, 'https://', 'url')}</div>
+      <label class="field"><span class="lbl">제약 사항 (금지 표현 · 법무 이슈 등)</span><textarea class="in" name="constraints" maxlength="600" placeholder="쓰면 안 되는 표현, 확인이 필요한 법무·심의 이슈">${esc(d.constraints)}</textarea></label>
+      <label class="field"><span class="lbl">클라이언트 담당자</span><input class="in" name="contact" maxlength="80" value="${esc(d.contact)}" placeholder="이름·직책만 (연락처는 적지 않아요)"></label>
+    </form>
+    <small class="muted">저장하면 "처음 시작하기"의 브리프 단계가 체크되고, Phase가 Brief를 지나 Concept로 넘어갈 수 있어요. 파일은 어카운트 폴더의 brief/ 에 쌓입니다.</small></div>`;
+  const v = $('#view'), form = $('#bForm');
+  const rowsOf = n => [...v.querySelectorAll(`[data-list="${n}"] .lrow`)];
+  v.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+    const n = b.dataset.add, host = v.querySelector(`[data-list="${n}"]`), proto = host.lastElementChild.cloneNode(true);
+    proto.querySelectorAll('input').forEach(i => { i.value = ''; }); host.appendChild(proto); bindDel(); proto.querySelector('input').focus();
+  });
+  const bindDel = () => v.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const host = b.closest('.rows'); if (host.children.length > 1) b.closest('.lrow').remove(); else b.closest('.lrow').querySelectorAll('input').forEach(i => { i.value = ''; }); });
+  bindDel();
+  v.querySelectorAll('[data-chan]').forEach(b => b.onclick = () => {
+    const inp = form.elements.channels, set = new Set(inp.value.split(/\s*,\s*/).filter(Boolean));
+    set.has(b.dataset.chan) ? set.delete(b.dataset.chan) : set.add(b.dataset.chan); inp.value = [...set].join(', ');
+    b.setAttribute('aria-pressed', set.has(b.dataset.chan));
+  });
+  const ver = $('#bVer'); if (ver) ver.onchange = () => { S.briefSel = +ver.value; viewBrief(); };
+  $('#bSave').onclick = guard(async () => {
+    const f = form.elements, fields = {};
+    ['campaign', 'start', 'end', 'goal', 'target', 'budget', 'channels', 'message', 'constraints', 'contact'].forEach(k => { fields[k] = f[k].value.trim(); });
+    fields.kpi = rowsOf('kpi').map(r => { const i = r.querySelectorAll('input'); return { metric: i[0].value.trim(), target: i[1].value.trim() }; });
+    fields.deliverables = rowsOf('deliverables').map(r => r.querySelector('input').value.trim());
+    fields.links = rowsOf('links').map(r => r.querySelector('input').value.trim());
+    const r = await api('/api/brief-v', { fields });
+    S.briefSel = null; S.brief = r; toast(`브리프 v${r.saved}을(를) 저장했습니다.`, 'ok');
+    await loadAccounts(); renderSide(); renderAcctHead(); viewBrief();
+  });
+}
 
 /* ---------- 스케줄 캘린더 ---------- */
 /* 광고주와 협의한 일정을 직접 적고, 콘텐츠 업로드 여부를 사람이 확인해 체크한다. 이 화면은 업로드·게시를 하지 않는다. */

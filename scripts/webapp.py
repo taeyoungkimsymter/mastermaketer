@@ -662,6 +662,8 @@ def account_summary(c, today):
                     active_work += 1
                 elif state == "approved" and fname.lower().startswith("report"):
                     report_done = True
+    if brief_versions(cid):   # 브리프를 저장하면 Brief(1)를 지나 Concept(2)부터
+        stage_no = max(stage_no, 2)
     phase_no = 6 if report_done else 5 if pending else 4 if active_work else stage_no
     lib = lib_load(cid)
     evs = [e for e in lib["events"] if e.get("date") and e.get("title")]
@@ -1086,6 +1088,105 @@ def launch_buddy():
     return {"running": True, "started": True}
 
 
+# ---------- Brief (어카운트 공통 브리프: clients/{id}/brief/brief-v{N}.json + 같은 이름의 .md) ----------
+# 저장할 때마다 새 버전을 쌓고 기존 버전은 고치지 않는다. .md 는 AI 팀이 읽기 쉬운 사본이다.
+
+BRIEF_TEXT = {"campaign": 80, "start": 10, "end": 10, "goal": 600, "target": 400, "budget": 80, "channels": 160,
+              "message": 400, "constraints": 600, "contact": 80}
+BRIEF_LABEL = {"campaign": "캠페인명", "period": "기간", "goal": "목표", "target": "타깃", "kpi": "KPI(지표·목표치)", "budget": "예산",
+               "channels": "채널", "message": "핵심 메시지", "deliverables": "산출물 목록", "links": "레퍼런스 링크",
+               "constraints": "제약 사항(금지 표현·법무 이슈 등)", "contact": "클라이언트 담당자"}
+
+
+def brief_dir(client):
+    return common.client_dir(client) / "brief"
+
+
+def brief_versions(client):
+    d = brief_dir(client)
+    out = []
+    if d.is_dir():
+        for f in d.glob("brief-v*.json"):
+            m = re.fullmatch(r"brief-v(\d+)\.json", f.name)
+            if m:
+                out.append(int(m.group(1)))
+    return sorted(out)
+
+
+def read_brief_version(client, n):
+    f = brief_dir(client) / f"brief-v{n}.json"
+    try:
+        return json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise AgencyError("해당 버전의 브리프를 찾을 수 없습니다.")
+
+
+def _brief_clean(fields):
+    f = fields if isinstance(fields, dict) else {}
+    out = {k: clean_text(f.get(k), n) for k, n in BRIEF_TEXT.items()}
+    for k in ("start", "end"):
+        if out[k]:
+            try:
+                datetime.date.fromisoformat(out[k])
+            except ValueError:
+                raise AgencyError("기간은 날짜(예: 2026-11-01)로 입력하세요.")
+    if out["start"] and out["end"] and out["end"] < out["start"]:
+        raise AgencyError("기간의 끝 날짜가 시작 날짜보다 빠릅니다.")
+    kpi = []
+    for r in (f.get("kpi") or [])[:10]:
+        m, t = clean_text((r or {}).get("metric"), 60), clean_text((r or {}).get("target"), 60)
+        if m or t:
+            kpi.append({"metric": m, "target": t})
+    out["kpi"] = kpi
+    out["deliverables"] = [x for x in (clean_text(v, 100) for v in (f.get("deliverables") or [])[:20]) if x]
+    links = []
+    for v in (f.get("links") or [])[:20]:
+        v = clean_text(v, 300)
+        if v:
+            if not re.match(r"^https?://\S+$", v):
+                raise AgencyError("레퍼런스 링크는 http:// 또는 https:// 로 시작해야 합니다.")
+            links.append(v)
+    out["links"] = links
+    if not out["campaign"]:
+        raise AgencyError("캠페인명을 입력하세요.")
+    return out
+
+
+def _brief_md(client, n, d, saved_at):
+    v = lambda x: x if x else "미정"  # noqa: E731
+    period = f"{d['start']} ~ {d['end']}" if d["start"] or d["end"] else ""
+    L = [f"# 브리프 v{n}: {d['campaign']}", "",
+         f"> client_id: {client} · 저장 {saved_at} · 모르는 항목은 \"미정\". 근거 없는 수치는 적지 않습니다.", "",
+         f"- 캠페인명: {d['campaign']}", f"- 기간: {v(period)}", f"- 목표: {v(d['goal'])}", f"- 타깃: {v(d['target'])}", "- KPI(지표·목표치):"]
+    L += [f"  - {k['metric'] or '미정'}: {k['target'] or '미정'}" for k in d["kpi"]] or ["  - 미정"]
+    L += [f"- 예산: {v(d['budget'])}", f"- 채널: {v(d['channels'])}", f"- 핵심 메시지: {v(d['message'])}", "- 산출물 목록:"]
+    L += [f"  - {x}" for x in d["deliverables"]] or ["  - 미정"]
+    L += ["- 레퍼런스 링크:"] + ([f"  - {x}" for x in d["links"]] or ["  - 미정"])
+    L += [f"- 제약 사항: {v(d['constraints'])}", f"- 클라이언트 담당자: {v(d['contact'])}", ""]
+    return "\n".join(L)
+
+
+def save_brief(client, fields):
+    d = _brief_clean(fields)
+    now = common.now_kst()
+    d["saved_at"] = now.isoformat(timespec="seconds")
+    p = common.write_versioned(brief_dir(client), "brief", ".json", json.dumps(d, ensure_ascii=False, indent=2))
+    n = int(re.fullmatch(r"brief-v(\d+)\.json", p.name).group(1))
+    md = p.with_suffix(".md")
+    if not md.exists():
+        md.write_text(_brief_md(client, n, d, d["saved_at"]), encoding="utf-8")
+    return n
+
+
+def brief_payload(client, n=None):
+    vs = brief_versions(client)
+    out = {"versions": [{"n": i, "saved_at": read_brief_version(client, i).get("saved_at", "")} for i in vs], "count": len(vs)}
+    pick = n if n in vs else (vs[-1] if vs else None)
+    out["n"] = pick
+    out["data"] = read_brief_version(client, pick) if pick else None
+    return out
+
+
 # ---------- HTTP ----------
 
 class Handler(BaseHTTPRequestHandler):
@@ -1243,6 +1344,12 @@ class Handler(BaseHTTPRequestHandler):
             return launch_buddy()
         if path == "/api/new-account" and method == "POST":
             return new_account(b.get("id"), b.get("name"), b.get("char"), b.get("desktop"))
+        if path == "/api/brief-v":
+            c = need_active()
+            if method == "POST":
+                n = save_brief(c, b.get("fields"))
+                return dict(brief_payload(c, n), saved=n)
+            return brief_payload(c, int(q["v"]) if (q.get("v") or "").isdigit() else None)
         if path == "/api/brief":
             c = need_active()
             if method == "POST":
