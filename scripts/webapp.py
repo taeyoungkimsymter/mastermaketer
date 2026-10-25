@@ -274,7 +274,7 @@ def list_deliverables(client, project):
         for p in d.iterdir():
             if p.is_file() and p.suffix in READABLE_EXT:
                 s = states.get(p.name) or {}
-                items.append({"area": area, "name": p.name, "state": s.get("state"), "by": s.get("by"), "at": s.get("at"), "note": s.get("note"),
+                items.append({"area": area, "name": p.name, "state": s.get("state"), "by": s.get("by"), "at": s.get("at"), "note": s.get("note"), "ch": s.get("ch"),
                               "mtime": int(p.stat().st_mtime)})
     items.sort(key=lambda x: -x["mtime"])
     return items
@@ -290,12 +290,94 @@ def read_file(client, project, area, name):
 
 
 def channels():
-    f = ROOT / "agency" / "knowledge" / "channel-specs.json"
     try:
-        return [{"id": s["channel"], "verified": s.get("status") == "verified"}
-                for s in json.loads(f.read_text(encoding="utf-8")).get("specs", [])]
+        return [{"id": s["channel"], "verified": s.get("status") == "verified"} for s in common.channel_specs_legacy()]
     except (OSError, ValueError):
         return []
+
+
+
+# ---------- 채널 규격 편집 (agency/knowledge/channel-specs.json) ----------
+SPEC_KEYS = ("ratio", "video_length", "caption", "title", "hashtag", "hook", "thumbnail")
+
+
+def _spec_int(v, what):
+    v = clean_text(v, 8)
+    if v == "":
+        return None
+    try:
+        n = int(v)
+    except ValueError:
+        raise AgencyError(f"{what}: 숫자로 입력하세요.")
+    if not 0 < n <= 100000:
+        raise AgencyError(f"{what}: 1 이상의 숫자여야 합니다.")
+    return n
+
+
+def _spec_write(d):
+    f = common.root().joinpath(*common.SPEC_FILE_PARTS)
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(f)
+
+
+def _spec_status(it, old):
+    """'확인함'은 출처를 적었을 때만. 확인한 날짜는 처음 확인함으로 바꾼 날을 유지한다."""
+    verified, source = bool(it.get("verified")), clean_text(it.get("source"), 200) or None
+    if verified and not source:
+        raise AgencyError("'확인함'으로 표시하려면 출처(URL·문서 이름)를 적어 주세요.")
+    if verified:
+        return "verified", source, (old.get("checked_at") if old.get("status") == "verified" else None) or common.today_kst().isoformat()
+    return "unverified", source, None
+
+
+def specs_update(section, cid, kind, items):
+    d = common.channel_specs_raw()
+    items = items if isinstance(items, dict) else {}
+    if section == "channel":
+        ch = (d.get("channels") or {}).get(cid)
+        if not ch or kind not in ("organic", "ads"):
+            raise AgencyError("알 수 없는 채널입니다.")
+        tgt = ch.setdefault(kind, {})
+        for key, it in items.items():
+            if key not in SPEC_KEYS or not isinstance(it, dict):
+                raise AgencyError("알 수 없는 항목입니다.")
+            old = tgt.get(key) or {}
+            new = dict(old)
+            if key in ("caption", "title"):
+                new["max"] = _spec_int(it.get("max"), d["fields"][key])
+                if key == "caption":
+                    hint = _spec_int(it.get("visible_hint"), "더보기 전 권장 길이")
+                    if hint is not None:
+                        new["visible_hint"] = hint
+                    else:
+                        new.pop("visible_hint", None)
+                    new.setdefault("count", old.get("count", "len"))
+                new.pop("value", None) if not clean_text(it.get("value"), 120) else new.update(value=clean_text(it.get("value"), 120))
+            else:
+                new["value"] = clean_text(it.get("value"), 400 if key == "hook" else 120) or None
+            new["status"], new["source"], new["checked_at"] = _spec_status(it, old)
+            new.setdefault("memo", old.get("memo", ""))
+            tgt[key] = new
+    elif section == "ad_media":
+        hit = next((m for m in d.get("ad_media", []) if f"{m['channel']}|{m['ad_format']}" == cid), None)
+        if not hit:
+            raise AgencyError("알 수 없는 광고 매체입니다.")
+        for name, it in items.items():
+            if name == "_status":
+                continue
+            if name not in hit["fields"] or not isinstance(it, dict):
+                raise AgencyError("알 수 없는 항목입니다.")
+            n = _spec_int(it.get("max"), name)
+            if n is None:
+                raise AgencyError(f"{name}: 길이 값을 비울 수 없습니다.")
+            hit["fields"][name]["max"] = n
+        meta = items.get("_status") or {}
+        hit["status"], hit["source"], hit["checked_at"] = _spec_status(meta, hit)
+    else:
+        raise AgencyError("알 수 없는 요청입니다.")
+    _spec_write(d)
+    return d
 
 
 # ---------- 고객사 라이브러리 (레퍼런스·경쟁사·검색 키워드) ----------
@@ -306,9 +388,9 @@ LIB_KINDS = {
     "competitors": {"brand": (60, True), "url": (300, False), "channel": (40, False), "note": (300, False)},
     "keywords": {"keyword": (60, True), "type": (10, False), "note": (200, False)},
     "events": {"date": (10, True), "title": (80, True), "type": (10, False), "channel": (40, False), "note": (200, False),
-               "role": (2, False), "link": (300, False)},
+               "role": (2, False), "link": (300, False), "ch": (20, False)},
     "requests": {"title": (100, True), "channel": (10, False), "role": (2, False), "due": (10, False),
-                 "priority": (10, False), "received": (10, False)},
+                 "priority": (10, False), "received": (10, False), "ch": (20, False)},
     "issues": {"date": (10, True), "type": (20, True), "content": (200, True), "action": (200, False)},
     "campaigns": {"name": (80, True), "start": (10, False), "end": (10, False), "goal": (300, False), "message": (300, False), "deliverables": (400, False)},
 }
@@ -316,12 +398,20 @@ REQ_CHANNELS = ("메일", "카톡", "미팅", "기타")
 REQ_STATUS = ("배정", "진행 중", "클로즈")
 ISSUE_TYPES = ("일정 딜레이", "소재 리젝", "성과 이상", "매체 정책·계정", "클라이언트 클레임")
 ISSUE_STATUS = ("해결", "조치 중", "미해결")
-UPDATABLE = {"requests": ("status", "role", "due", "priority"), "issues": ("status", "action"), "events": ("link", "role", "wait"),
+UPDATABLE = {"requests": ("status", "role", "due", "priority", "ch"), "issues": ("status", "action"), "events": ("link", "role", "wait", "ch"),
              "campaigns": ("name", "start", "end", "goal", "message", "deliverables")}
 EVENT_TYPES = ("콘텐츠", "기획", "촬영", "회의", "기타")
 KEYWORD_TYPES = ("브랜드", "경쟁사", "일반")
 LIB_MAX = 300
 LIB_LOCK = threading.Lock()
+
+
+def _op_channel_label(client, cid):
+    """일정·리퀘스트·결과물에 붙이는 채널은 어카운트의 운영 채널(channels.json)에 있는 것만 고를 수 있다."""
+    for c in common.channels_current(client):
+        if c.get("id") == cid:
+            return c.get("label") or cid
+    raise AgencyError("운영 채널에 없는 채널이에요. Playbook의 운영 채널에서 먼저 추가하세요.")
 
 
 def lib_file(client):
@@ -381,6 +471,8 @@ def lib_change(client, kind, op, item, item_id):
                     raise AgencyError("이슈 유형이 올바르지 않습니다.")
                 if name == "role" and v and v not in ROLE_CODES:
                     raise AgencyError("역할 코드는 AE/AP/CW/AD/PD/MP 중 하나입니다.")
+                if name == "ch" and v:
+                    _op_channel_label(client, v)
                 if name in ("date", "due", "received", "start", "end") and v:
                     try:
                         datetime.date.fromisoformat(v)
@@ -389,6 +481,8 @@ def lib_change(client, kind, op, item, item_id):
                 row[name] = v
             if kind == "keywords" and any(r.get("keyword", "").lower() == row["keyword"].lower() for r in rows):
                 raise AgencyError("이미 등록된 키워드입니다.")
+            if kind == "events" and row.get("ch"):
+                row["channel"] = _op_channel_label(client, row["ch"])   # 예전 화면이 읽는 글자 채널도 같이 맞춘다
             row["id"] = secrets.token_hex(4)
             row["added"] = common.today_kst().isoformat()
             if kind == "events":
@@ -419,6 +513,10 @@ def lib_change(client, kind, op, item, item_id):
                     raise AgencyError("역할 코드는 AE/AP/CW/AD/PD/MP 중 하나입니다.")
                 elif k == "priority" and v not in ("High", "Normal"):
                     raise AgencyError("우선순위는 High 또는 Normal 입니다.")
+                elif k == "ch":
+                    label = _op_channel_label(client, v) if v else ""
+                    if kind == "events":
+                        hit["channel"] = label
                 elif k in ("due", "start", "end") and v:
                     try:
                         datetime.date.fromisoformat(v)
@@ -537,7 +635,7 @@ def all_events():
             out.append({"client": c["id"], "brand": c["name"], "id": e.get("id"), "date": e["date"], "title": e["title"],
                         "type": e.get("type") or "기타", "channel": e.get("channel") or "", "done": bool(e.get("done")),
                         "role": e.get("role") or EVENT_ROLE.get(e.get("type") or "기타", ""), "sample": bool(e.get("sample")),
-                        "link": e.get("link") or ""})
+                        "link": e.get("link") or "", "ch": e.get("ch") or ""})
     return out
 
 
@@ -600,6 +698,25 @@ def read_team(client):
     except (OSError, ValueError):
         return {}
     return {k: str(v)[:40] for k, v in data.items() if k in ROLE_CODES and v} if isinstance(data, dict) else {}
+
+
+def weekly_shortfalls(client, today):
+    """운영 채널 카드의 주간 업로드 횟수보다 이번 주(월~일)에 등록된 포스팅 일정이 적은 채널. 횟수를 비워 둔(또는 0) 채널은 뺀다."""
+    mon = today - datetime.timedelta(days=today.weekday())
+    w0, w1 = mon.isoformat(), (mon + datetime.timedelta(days=6)).isoformat()
+    try:
+        events = lib_load(client)["events"]
+    except (OSError, AgencyError):
+        return []
+    out = []
+    for c in common.channels_current(client):
+        w = c.get("weekly")
+        if not w:
+            continue
+        n = sum(1 for e in events if e.get("ch") == c["id"] and e.get("type") == "콘텐츠" and w0 <= str(e.get("date") or "") <= w1)
+        if n < w:
+            out.append({"ch": c["id"], "label": c.get("label") or c["id"], "weekly": w, "count": n, "week": w0, "end": w1})
+    return out
 
 
 def account_summary(c, today):
@@ -671,7 +788,7 @@ def account_summary(c, today):
     for x in collect_deliverables(cid):
         if x["state"] in ("draft", "needs_revision", "review_passed") and x["role"] in work:
             work[x["role"]] += 1
-    return {"id": cid, "name": name, "note": note.rstrip(")"), "month_cost": month_cost, "work": work, "status": status, "phase": PHASES[phase_no - 1],
+    return {"id": cid, "name": name, "note": note.rstrip(")"), "month_cost": month_cost, "work": work, "shortfalls": weekly_shortfalls(cid, today), "status": status, "phase": PHASES[phase_no - 1],
             "phase_no": phase_no, "pending": pending, "overdue": len(overdue) + len(req_late),
             "overdue_posts": len(overdue), "overdue_req": len(req_late),
             "post_done": sum(1 for e in posts if e.get("done")), "post_total": len(posts), "projects": projects,
@@ -903,6 +1020,9 @@ def buddy_alerts(client, today):
             # 문장으로 쓴 이슈(…해요/…이에요)는 그대로, 명사구로 쓴 이슈는 따옴표로 감싸 문장을 만든다
             text = c if re.search(r"(요|다|죠|네요)$", c) else f"'{c}' 건이 아직 해결되지 않았어요"
             add("urgent", "issue", i.get("id"), ISSUE_ROLE[i["type"]], f"이슈 · {i['type']}", text, "account", "issue", i.get("sample"), i.get("date"))
+    for sf in weekly_shortfalls(client, today):
+        add("check", "weekly-short", f"{sf['ch']}:{sf['week']}", "AE", f"{sf['label']} · 업로드 계획",
+            f"이번 주 {sf['label']} 업로드를 주 {sf['weekly']}회로 정했는데, 등록된 일정이 {sf['count']}개예요", "account", "cal", False, sf["end"])
     # 컨펌 대기 결과물
     pend, stale = [], []
     pdir = common.client_dir(client) / "projects"
@@ -1424,6 +1544,17 @@ class Handler(BaseHTTPRequestHandler):
             return launch_buddy()
         if path == "/api/new-account" and method == "POST":
             return new_account(b.get("id"), b.get("name"), b.get("char"), b.get("desktop"))
+        if path == "/api/channel-specs":
+            if method == "POST":
+                return specs_update(b.get("section"), clean_text(b.get("id"), 80), clean_text(b.get("kind"), 10), b.get("items"))
+            return common.channel_specs_raw()
+        if path == "/api/deliverable-channel" and method == "POST":
+            c = need_active()
+            ch = clean_text(b.get("ch"), 20) or None
+            if ch:
+                _op_channel_label(c, ch)
+            status.set_channel(c, common.validate_id(b.get("project"), "project_id"), clean_text(b.get("file"), 120), ch)
+            return {"ok": True}
         if path == "/api/channels":
             c = need_active()
             return {"channels": common.channels_current(c), "catalog": [{"id": k, "label": v} for k, v in OP_CHANNELS.items()], "roles": list(CH_ROLES)}

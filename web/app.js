@@ -239,7 +239,7 @@ const fmtDate = ts => new Date(ts * 1000).toLocaleDateString('ko-KR', { timeZone
 function toggleTheme() {
   const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = n; store.set('theme', n); renderSide();
-  if (['welcome', 'calendar', 'team', 'reports'].includes(S.view)) render();
+  if (['welcome', 'calendar', 'team', 'reports', 'specs'].includes(S.view)) render();
 }
 /* ---------- 역할 탭 외곽선 아이콘 (24px, 선 1.8, 색은 currentColor — docs 시안 side-tabs-v2) ---------- */
 const OUTLINE = {
@@ -269,7 +269,7 @@ const accOf = id => ((S.acc && S.acc.accounts) || []).find(x => x.id === id);
 const shortName = c => c.name.split(' (')[0];
 function renderSide() {
   const a = S.st.active, cl = S.st.clients;
-  const home = ['welcome', 'calendar', 'team', 'reports'].includes(S.view) || !a;
+  const home = ['welcome', 'calendar', 'team', 'reports', 'specs'].includes(S.view) || !a;
   const run = S.st.running || (S.run && S.run.running);
   const dark = document.documentElement.dataset.theme === 'dark';
   const connTxt = !S.st.claude ? 'Claude Code 를 찾을 수 없음' : run ? '작업 중' : '연결됨';
@@ -327,7 +327,7 @@ function myTasksHtml(code) {
 /* 어카운트 헤더 · 가로 탭 · 탭 제목과 칩(세부 메뉴) */
 function renderAcctHead() {
   const el = $('#acctHead'), a = S.st.active;
-  const show = a && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(S.view);
+  const show = a && !['welcome', 'calendar', 'team', 'reports', 'specs', 'new-client'].includes(S.view);
   if (!show) { el.innerHTML = ''; return; }
   const cl = S.st.clients.find(c => c.id === a), acc = accOf(a) || {}, tab = TABS.find(t => t.id === S.tab), more = moreOf(S.view);
   const pend = S.ov.filter(i => i.state === 'review_passed').length, cand = S.fb.filter(f => f.status === '후보').length;
@@ -344,10 +344,12 @@ function renderAcctHead() {
         <div class="menu" role="menu" hidden><button role="menuitem" data-act="team">담당자 배정</button><button role="menuitem" data-act="buddy">캐릭터 설정</button><button role="menuitem" data-act="settings">설정 · 대표 이름</button><hr>${MORE.map(m => `<button role="menuitem" data-m="${m[2]}">${esc(m[1])}${m[0] === 'feedback' && cand ? `<span class="cnt">${cand}</span>` : ''}</button>`).join('')}</div></div></div></header>
     ${desc ? `<div class="th"><span class="muted">${esc(desc)}</span>${tab && ['strategy', 'copy', 'art'].includes(tab.id) ? `<button class="lnk acc" data-brief>${S.pbLatest && S.pbLatest.count ? `Playbook 보기 (v${S.pbLatest.versions[S.pbLatest.versions.length - 1].n}) ›` : 'Playbook 작성하기 ›'}</button>` : ''}</div>` : ''}
     ${tab && tab.subs.length ? `<div class="chips">${tab.subs.map(([k, l]) => { const n = chipCount(k); return `<button class="fchip" data-c="${k}" aria-pressed="${k === S.sub}">${esc(l)}${n === '' ? '' : ` <span class="n">${n}</span>`}</button>`; }).join('')}</div>` : ''}
+    ${tab && tab.id === 'account' && acc.shortfalls && acc.shortfalls.length ? shortfallHtml(acc.shortfalls) : ''}
     ${tab && ['copy', 'art'].includes(tab.id) ? pbSummaryHtml(tab.id) : ''}
     ${tab && tab.code ? myTasksHtml(tab.code) : ''}`;
   el.querySelector('[data-back]').onclick = () => go('welcome');
   el.querySelector('[data-pend]').onclick = () => openDrawer('ALL');
+  const ap = el.querySelector('[data-addpost]'); if (ap) ap.onclick = async () => { S.calMode = 'list'; await goSub('account', 'cal'); postModal(); };
   const bl = el.querySelector('[data-brief]'); if (bl) bl.onclick = () => goSub('account', 'playbook');
   el.querySelector('[data-theme-toggle2]').onclick = toggleTheme;
   const mb = el.querySelector('[data-more]'), mn = el.querySelector('.menu');
@@ -401,12 +403,12 @@ function goSub(tab, sub) {
   return go(t.subs.find(y => y[0] === sub)[2], t.id, sub);
 }
 async function go(v, tab, sub) {
-  if (!S.st.active && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(v)) v = 'welcome';
+  if (!S.st.active && !['welcome', 'calendar', 'team', 'reports', 'specs', 'new-client'].includes(v)) v = 'welcome';
   S.view = v;
   const loc = tab ? [tab, sub] : locate(v);
   if (loc && S.st.active) [S.tab, S.sub] = loc; else S.tab = S.sub = null;
   if (S.detail) { S.detail = null; renderDetail(); }
-  if (S.st.active && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview(), loadPlaybookState()]);
+  if (S.st.active && !['welcome', 'calendar', 'team', 'reports', 'specs', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview(), loadPlaybookState(), loadChannelsState()]);
   if (v === 'overview') await loadPerfWeek();
   if (v === 'results') await loadResults();
   if (v === 'feedback') { try { S.fb = (await api('/api/feedback')).items; } catch (e) { toast(e.message, 'bad'); } }
@@ -415,7 +417,7 @@ async function go(v, tab, sub) {
 /* 브라우저 탭 제목: "마스터마케터 · All Accounts", "마스터마케터 · CJ · Overview" 처럼 화면에 맞게 바꾼다 */
 function setTitle() {
   const v = S.view, a = S.st && S.st.active, parts = ['마스터마케터'];
-  const top = { welcome: 'All Accounts', calendar: 'Calendar', team: 'Team', reports: 'Reports', 'new-client': (CMDS['new-client'] || {}).title || '새 어카운트 등록' }[v];
+  const top = { welcome: 'All Accounts', calendar: 'Calendar', team: 'Team', reports: 'Reports', specs: '채널 규격', 'new-client': (CMDS['new-client'] || {}).title || '새 어카운트 등록' }[v];
   if (top || !a) parts.push(top || 'All Accounts');
   else {
     const cl = S.st.clients.find(c => c.id === a), tab = TABS.find(t => t.id === S.tab), more = moreOf(v);
@@ -431,6 +433,7 @@ function render() {
   if (v === 'welcome') return viewAccounts();
   if (v === 'calendar') return viewCalendarHome();
   if (v === 'team') return viewTeam();
+  if (v === 'specs') return viewSpecs();
   if (v === 'results') return viewResults();
   if (v === 'feedback') return viewFeedback();
   if (v === 'overview') return viewAcctOverview();
@@ -512,6 +515,7 @@ function newAccountModal() {
     draw();
   });
 }
+async function loadChannelsState() { try { S.opch = await api('/api/channels'); } catch { S.opch = { channels: [] }; } }
 async function loadPlaybookState() { try { S.pbLatest = await api('/api/playbook'); } catch { S.pbLatest = { count: 0, versions: [], data: null }; } }
 function checklistSteps() {
   const acc = accOf(S.st.active) || {}, a = S.st.active;
@@ -653,9 +657,11 @@ function settingsModal() {
     <div class="field" style="margin-top:12px"><span class="lbl">버디 방해 금지</span>
       <label class="pick"><input type="checkbox" id="dndOn" ${(S.st.dnd || {}).enabled ? 'checked' : ''}><span>이 시간에는 버디가 쉬어요 (긴급만 작은 배지로 남아요)</span></label>
       <div class="row" style="margin-top:8px"><input class="in" type="time" id="dndS" value="${esc((S.st.dnd || {}).start || '19:00')}" aria-label="시작 시간" style="width:130px"><span>~</span><input class="in" type="time" id="dndE" value="${esc((S.st.dnd || {}).end || '09:00')}" aria-label="끝 시간" style="width:130px"></div></div>
+    <div class="field" style="margin-top:12px"><span class="lbl">채널 규격</span><button type="button" class="btn" id="toSpecs">채널 규격 편집 ›</button><span class="hint">화면 비율·영상 길이·캡션/제목 길이·해시태그·훅·썸네일 기본값을 고쳐요. 확실하지 않은 값은 "확인 필요"로 비워 둬요.</span></div>
     <div class="row end"><button class="btn" id="m-no">닫기</button><button class="btn pri" id="m-ok">저장</button></div>`,
   m => {
     $('#m-no', m).onclick = closeModal;
+    $('#toSpecs', m).onclick = () => { closeModal(); go('specs'); };
     let bs = S.st.buddy_size || 'small';
     m.querySelectorAll('[data-bs]').forEach(b => b.onclick = () => { bs = b.dataset.bs; m.querySelectorAll('[data-bs]').forEach(x => { const on = x.dataset.bs === bs; x.setAttribute('aria-pressed', on); x.setAttribute('aria-checked', on); }); });
     $('#m-ok', m).onclick = guard(async () => {
@@ -958,9 +964,29 @@ const evSort = (a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b
 async function evChange(op, extra) { S.lib = await api('/api/library', { kind: 'events', op, ...extra }); }
 function evRow(e) {
   return `<div class="evrow ${e.done ? 'done' : ''}"><label class="pick"><input type="checkbox" data-tg="${esc(e.id)}" ${e.done ? 'checked' : ''}><span><b>${esc(e.title)}</b>${e.sample ? ' <span class="tag">예시</span>' : ''}</span></label>
-    <div class="row"><span class="chip" data-t="${esc(e.type)}">${esc(typeLabel(e.type))}</span>${e.channel ? `<span class="chip">${esc(e.channel)}</span>` : ''}
+    <div class="row"><span class="chip" data-t="${esc(e.type)}">${esc(typeLabel(e.type))}</span>${chChip(e)}
       <span class="chip ${e.done ? 'ok' : overdue(e) ? 'bad' : ''}">${e.done ? `${doneLabel(e)}${e.done_at ? ' · ' + esc(e.done_at.slice(5)) : ''}` : overdue(e) ? '딜레이 · 포스팅 미확인' : '예정'}</span>
       <span class="spacer"></span><button class="btn sm danger" data-rm="${esc(e.id)}">삭제</button></div>${e.note ? `<p class="muted">${esc(e.note)}</p>` : ''}</div>`;
+}
+/* ---------- 채널 태그: 일정·리퀘스트·결과물이 어느 운영 채널(channels.json)용인지. 아이콘은 외곽선 스타일 ---------- */
+const CH_ICON = {
+  instagram: '<rect x="4" y="4" width="16" height="16" rx="4.5"/><circle cx="12" cy="12" r="3.6"/><circle cx="16.8" cy="7.2" r=".6"/>',
+  'youtube-long': '<rect x="3" y="6" width="18" height="12" rx="3.5"/><path d="M10.2 9.6v4.8l4.2-2.4z"/>',
+  'youtube-shorts': '<rect x="7" y="3" width="10" height="18" rx="3.5"/><path d="M10.8 9.8v4.4l3.4-2.2z"/>',
+  tiktok: '<path d="M14 4v10.2a3.6 3.6 0 1 1-3.6-3.6M14 4c.3 2.3 1.9 3.9 4.2 4.1"/>',
+  'naver-blog': '<rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="M8.5 15.5v-7l7 7v-7"/>',
+  threads: '<path d="M16.5 8.6c-.7-2-2.3-3-4.5-3-3 0-4.9 2.2-4.9 6.4s1.9 6.4 4.9 6.4c2.6 0 4.2-1.3 4.2-3.2 0-2-1.8-3-4.1-3-1.5 0-2.4.6-2.4 1.5s.9 1.4 1.9 1.4c1.7 0 2.8-1.6 2.9-4.4"/>',
+  other: '<circle cx="12" cy="12" r="8"/><path d="M12 8.5v7M8.5 12h7"/>',
+};
+const chIcon = (id, size = 14) => `<svg class="chi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CH_ICON[/^custom-/.test(id) ? 'other' : id] || CH_ICON.other}</svg>`;
+const chCards = () => (S.opch && S.opch.channels) || [];
+const chLabel = id => { const c = chCards().find(x => x.id === id); return c ? c.label : ((OPCH.find(x => x[0] === id) || [])[1] || ''); };
+const chChip = e => e.ch ? `<span class="chip chc" title="${esc(chLabel(e.ch) || e.channel || '')}">${chIcon(e.ch)}${esc(chLabel(e.ch) || e.channel || '')}</span>` : e.channel ? `<span class="chip">${esc(e.channel)}</span>` : '';
+const chOptions = cur => `<option value="">${'—'}</option>${chCards().map(c => `<option value="${esc(c.id)}" ${c.id === cur ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}`;
+const chSelect = (name, cur) => chCards().length ? `<select class="in" name="${name}"><option value="">채널 선택 (선택 사항)</option>${chCards().map(c => `<option value="${esc(c.id)}" ${c.id === cur ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}</select>` : `<select class="in" name="${name}" disabled><option value="">Playbook의 운영 채널을 먼저 정해 주세요</option></select>`;
+const chPass = f => e => !f || (f === 'none' ? !e.ch : e.ch === f);
+function shortfallHtml(list) {
+  return `<div class="pbsum warnrow"><b>체크 필요</b>${list.map(x => `<span class="chip warn chc">${chIcon(x.ch)}${esc(x.label)} 주 ${x.weekly}회 중 ${x.count ? `${x.count}회만 등록` : '아직 등록 없음'}</span>`).join('')}<button class="lnk acc" data-addpost>일정 추가 ›</button></div>`;
 }
 const calToggle = () => `<div class="seg" role="group" aria-label="보기"><button class="seg-b" data-mode="cal" aria-pressed="${S.calMode !== 'list'}">캘린더</button><button class="seg-b" data-mode="list" aria-pressed="${S.calMode === 'list'}">리스트 (포스팅 관리)</button></div>`;
 function bindCalToggle() { $('#view').querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.calMode = b.dataset.mode; viewCal(); }); }
@@ -970,18 +996,20 @@ function viewCalGrid() {
   const C = S.cal = S.cal || { y: +today.slice(0, 4), m: +today.slice(5, 7), sel: today };
   const pad = n => String(n).padStart(2, '0'), key = d => `${C.y}-${pad(C.m)}-${pad(d)}`;
   const lead = new Date(C.y, C.m - 1, 1).getDay(), days = new Date(C.y, C.m, 0).getDate();
-  const by = {}; S.lib.events.forEach(e => (by[e.date] = by[e.date] || []).push(e));
-  const month = S.lib.events.filter(e => e.date.startsWith(`${C.y}-${pad(C.m)}`));
+  const pass = chPass(S.calCh || ''), shown = S.lib.events.filter(pass);
+  const by = {}; shown.forEach(e => (by[e.date] = by[e.date] || []).push(e));
+  const month = shown.filter(e => e.date.startsWith(`${C.y}-${pad(C.m)}`));
   const cont = month.filter(e => e.type === '콘텐츠');
   let cells = '<span class="cal-d off"></span>'.repeat(lead);
   for (let d = 1; d <= days; d++) {
     const k = key(d), evs = (by[k] || []).slice().sort(evSort);
-    cells += `<button class="cal-d ${k === today ? 'today' : ''} ${k === C.sel ? 'sel' : ''}" data-d="${k}"><span class="dn">${d}</span>${evs.slice(0, 3).map(e => `<span class="ev ${overdue(e) ? 'late' : ''}" data-t="${esc(e.type)}" ${e.done ? 'data-done' : ''}>${e.done ? '✓ ' : ''}${esc(e.title)}</span>`).join('')}${evs.length > 3 ? `<span class="more">+${evs.length - 3}</span>` : ''}</button>`;
+    cells += `<button class="cal-d ${k === today ? 'today' : ''} ${k === C.sel ? 'sel' : ''}" data-d="${k}"><span class="dn">${d}</span>${evs.slice(0, 3).map(e => `<span class="ev ${overdue(e) ? 'late' : ''}" data-t="${esc(e.type)}" ${e.done ? 'data-done' : ''}>${e.done ? '✓ ' : ''}${e.ch ? chIcon(e.ch, 11) + ' ' : ''}${esc(e.title)}</span>`).join('')}${evs.length > 3 ? `<span class="more">+${evs.length - 3}</span>` : ''}</button>`;
   }
   const dayEvs = (by[C.sel] || []).slice().sort(evSort);
   $('#view').innerHTML = `${calToggle()}
     <div class="stats">${statHtml('이번 달 일정', `${month.length}개`)}${statHtml('콘텐츠 포스팅', `${cont.filter(e => e.done).length}/${cont.length}`, '확인 완료/전체')}${statHtml('딜레이', `${S.lib.events.filter(overdue).length}개`, '포스팅 미확인')}</div>
     <div class="cal-head"><button class="btn sm" id="cPrev" aria-label="이전 달">←</button><b>${C.y}년 ${C.m}월</b><button class="btn sm" id="cNext" aria-label="다음 달">→</button><button class="btn sm" id="cToday">오늘</button>
+      <select class="in sm" id="cCh" aria-label="채널 필터" style="width:auto"><option value="">전체 채널</option>${chCards().map(c => `<option value="${esc(c.id)}" ${S.calCh === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}<option value="none" ${S.calCh === 'none' ? 'selected' : ''}>채널 미지정</option></select>
       <span class="spacer"></span>${EVENT_TYPES.map(t => `<span class="chip" data-t="${t}">${typeLabel(t)}</span>`).join('')}</div>
     <div class="cal card"><div class="cal-w">${['일', '월', '화', '수', '목', '금', '토'].map(w => `<span>${w}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
     <div class="grid2" style="margin-top:18px;align-items:start">
@@ -992,7 +1020,7 @@ function viewCalGrid() {
         <label class="field"><span class="lbl">날짜<span class="req">*</span></span><input class="in" type="date" name="date" value="${esc(C.sel)}" required></label>
         <label class="field"><span class="lbl">제목<span class="req">*</span></span><input class="in" name="title" maxlength="80" placeholder="예: 10월 인스타 릴스 포스팅" required></label>
         <div class="grid2"><label class="field"><span class="lbl">유형</span><select class="in" name="type">${EVENT_TYPES.map(t => `<option value="${t}">${typeLabel(t)}</option>`).join('')}</select></label>
-          <label class="field"><span class="lbl">채널</span><input class="in" name="channel" maxlength="40" placeholder="예: 인스타그램"></label></div>
+          <label class="field"><span class="lbl">채널</span>${chSelect('ch', '')}</label></div>
         <label class="field"><span class="lbl">제작 역할 (선택)</span><select class="in" name="role"><option value="">자동(유형 기준)</option>${ROLE_CODES.map(c => `<option>${c}</option>`).join('')}</select></label>
         <label class="field"><span class="lbl">메모 (클라이언트와 협의한 내용)</span><input class="in" name="note" maxlength="200"></label>
         <button class="btn pri" type="submit">일정 추가</button></form>
@@ -1000,13 +1028,14 @@ function viewCalGrid() {
   bindCalToggle();
   const nav = d => { C.m += d; if (C.m < 1) { C.m = 12; C.y--; } if (C.m > 12) { C.m = 1; C.y++; } viewCal(); };
   $('#cPrev').onclick = () => nav(-1); $('#cNext').onclick = () => nav(1);
+  $('#cCh').onchange = e => { S.calCh = e.target.value; viewCal(); };
   $('#cToday').onclick = () => { S.cal = null; viewCal(); };
   $('#view').querySelectorAll('[data-d]').forEach(b => b.onclick = () => { C.sel = b.dataset.d; viewCal(); });
   $('#view').querySelectorAll('[data-tg]').forEach(c => c.onchange = guard(async () => { await evChange('toggle', { id: c.dataset.tg }); viewCal(); }));
   $('#view').querySelectorAll('[data-rm]').forEach(b => b.onclick = guard(async () => { await evChange('delete', { id: b.dataset.rm }); viewCal(); }));
   $('#evform').onsubmit = guard(async e => {
     e.preventDefault();
-    const item = {}; ['date', 'title', 'type', 'channel', 'role', 'note'].forEach(k => { item[k] = e.target.querySelector(`[name=${k}]`).value; });
+    const item = {}; ['date', 'title', 'type', 'ch', 'role', 'note'].forEach(k => { item[k] = e.target.querySelector(`[name=${k}]`).value; });
     await evChange('add', { item });
     C.y = +item.date.slice(0, 4); C.m = +item.date.slice(5, 7); C.sel = item.date;
     toast('일정을 추가했습니다.', 'ok'); viewCal();
@@ -1028,14 +1057,14 @@ function postModal() {
     <form id="pf" class="form" autocomplete="off">
       <label class="field"><span class="lbl">포스팅일<span class="req">*</span></span><input class="in" type="date" name="date" value="${esc(S.st.today)}" required></label>
       <label class="field"><span class="lbl">콘텐츠<span class="req">*</span></span><input class="in" name="title" maxlength="80" placeholder="예: 카드뉴스 포스팅" required></label>
-      <div class="grid2"><label class="field"><span class="lbl">채널</span><input class="in" name="channel" maxlength="40" placeholder="예: 인스타그램"></label>
+      <div class="grid2"><label class="field"><span class="lbl">채널</span>${chSelect('ch', '')}</label>
         <label class="field"><span class="lbl">제작 역할</span>${sel('role', roleOpts, '')}</label></div>
       <div class="row end"><button class="btn" type="button" id="m-no">취소</button><button class="btn pri" type="submit">추가</button></div></form>`,
   m => {
     $('#m-no', m).onclick = closeModal;
     $('#pf', m).onsubmit = guard(async e => {
       e.preventDefault(); const f = e.target, item = { type: '콘텐츠' };
-      ['date', 'title', 'channel', 'role'].forEach(k => { item[k] = f.elements[k].value; });
+      ['date', 'title', 'ch', 'role'].forEach(k => { item[k] = f.elements[k].value; });
       await libSet('events', 'add', { item }); closeModal(); toast('포스팅 일정을 추가했습니다.', 'ok'); viewPosts(); refreshAcct();
     });
   });
@@ -1052,16 +1081,16 @@ function linkModal(e) {
 function viewPosts() {
   const F = S.postF = S.postF || { ch: 'All', st: '' }, today = S.st.today;
   const all = S.lib.events.filter(e => e.type === '콘텐츠').sort(evSort);
-  const chans = ['All', ...new Set(all.map(e => e.channel).filter(Boolean))];
+  const chans = [['All', '전체'], ...chCards().map(c => [c.id, c.label]), ...(all.some(e => !e.ch) ? [['none', '채널 미지정']] : [])];
   const st = e => postStatus(e)[0];
-  const rows = all.filter(e => (F.ch === 'All' || e.channel === F.ch) && (!F.st || st(e) === F.st));
+  const rows = all.filter(e => (F.ch === 'All' || chPass(F.ch)(e)) && (!F.st || st(e) === F.st));
   const nWait = all.filter(e => st(e) === '컨펌 대기').length, nLate = all.filter(e => st(e) === '딜레이').length;
   $('#view').innerHTML = `<div class="stack">
-    <div class="fbar">${calToggle()}<span class="vsep"></span>${chans.map(c => `<button class="fchip" data-ch="${esc(c)}" aria-pressed="${F.ch === c}">${esc(c)}</button>`).join('')}<span class="vsep"></span>
+    <div class="fbar">${calToggle()}<span class="vsep"></span>${chans.map(([id, l]) => `<button class="fchip chc" data-ch="${esc(id)}" aria-pressed="${F.ch === id}">${id !== 'All' && id !== 'none' ? chIcon(id) : ''}${esc(l)}</button>`).join('')}<span class="vsep"></span>
       <button class="fchip" data-stf="컨펌 대기" aria-pressed="${F.st === '컨펌 대기'}">컨펌 대기 ${nWait}</button><button class="fchip ${nLate ? 'late' : ''}" data-stf="딜레이" aria-pressed="${F.st === '딜레이'}">딜레이 ${nLate}</button>
       <span class="spacer"></span><button class="btn pri" id="addPost">+ 포스팅 일정</button></div>
     <div class="tbl"><div class="tbl-in" style="min-width:900px"><div class="tr th" style="grid-template-columns:100px 100px 1fr 90px 220px 130px 40px"><span>포스팅일</span><span>채널</span><span>콘텐츠</span><span>제작</span><span>상태</span><span>포스팅 링크</span><span></span></div>
-      ${rows.length ? rows.map(e => { const [l, k] = postStatus(e); return `<div class="tr" style="grid-template-columns:100px 100px 1fr 90px 220px 130px 40px"><span class="muted">${wd(e.date)}</span><span>${esc(e.channel || '—')}</span><b>${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</b>
+      ${rows.length ? rows.map(e => { const [l, k] = postStatus(e); return `<div class="tr" style="grid-template-columns:100px 100px 1fr 90px 220px 130px 40px"><span class="muted">${wd(e.date)}</span><span>${chCards().length ? `<select class="in sm" data-evch="${esc(e.id)}" aria-label="채널">${chOptions(e.ch || '')}</select>` : esc(e.channel || '—')}</span><b>${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</b>
         <span>${sel('role', roleOpts, evRole(e), `data-role="${esc(e.id)}"`)}</span>
         <span class="row">${stPill(l, k)}${e.done ? '' : `<button class="btn sm" data-wait="${esc(e.id)}">${e.wait ? '대기 해제' : '컨펌 대기'}</button><button class="btn sm" data-done="${esc(e.id)}">포스팅 확인</button>`}</span>
         <span>${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener noreferrer" class="ok-t">링크 등록됨</a> <button class="lnk" data-link="${esc(e.id)}" aria-label="링크 수정">✎</button>` : `<button class="btn sm" data-link="${esc(e.id)}">링크 등록</button>`}</span>
@@ -1074,6 +1103,7 @@ function viewPosts() {
   v.querySelectorAll('[data-stf]').forEach(b => b.onclick = () => { F.st = F.st === b.dataset.stf ? '' : b.dataset.stf; viewPosts(); });
   $('#addPost').onclick = postModal;
   v.querySelectorAll('[data-role]').forEach(x => x.onchange = go2(() => libSet('events', 'update', { id: x.dataset.role, item: { role: x.value } })));
+  v.querySelectorAll('[data-evch]').forEach(x => x.onchange = go2(() => libSet('events', 'update', { id: x.dataset.evch, item: { ch: x.value } })));
   v.querySelectorAll('[data-wait]').forEach(b => b.onclick = go2(() => libSet('events', 'update', { id: b.dataset.wait, item: { wait: !by(b.dataset.wait).wait } })));
   v.querySelectorAll('[data-done]').forEach(b => b.onclick = go2(() => libSet('events', 'toggle', { id: b.dataset.done })));
   v.querySelectorAll('[data-link]').forEach(b => b.onclick = () => linkModal(by(b.dataset.link)));
@@ -1087,8 +1117,9 @@ function reqModal(pre = {}) {
   modal(`<h3>리퀘스트 등록</h3>
     <form id="rf" class="form" autocomplete="off">
       <label class="field"><span class="lbl">리퀘스트<span class="req">*</span></span><input class="in" name="title" maxlength="100" value="${esc(pre.title || '')}" placeholder="예: 상세페이지 가격 표기 수정" required></label>
-      <div class="grid2"><label class="field"><span class="lbl">채널</span>${sel('channel', REQ_CHANNELS, pre.channel || '미팅')}</label>
+      <div class="grid2"><label class="field"><span class="lbl">접수 경로</span>${sel('channel', REQ_CHANNELS, pre.channel || '미팅')}</label>
         <label class="field"><span class="lbl">담당 역할</span>${sel('role', roleOpts, pre.role || '')}</label></div>
+      <label class="field"><span class="lbl">운영 채널</span>${chSelect('ch', pre.ch || '')}</label>
       <div class="grid2"><label class="field"><span class="lbl">데드라인</span><input class="in" type="date" name="due" value="${esc(pre.due || '')}"></label>
         <label class="field"><span class="lbl">우선순위</span>${sel('priority', ['Normal', 'High'], 'Normal')}</label></div>
       <p class="muted" style="font-size:12.5px;margin:0">담당을 지정하면 그 팀 탭의 My Tasks에 올라갑니다. 모르는 값은 비워 두세요.</p>
@@ -1097,7 +1128,7 @@ function reqModal(pre = {}) {
     $('#m-no', m).onclick = closeModal;
     $('#rf', m).onsubmit = guard(async e => {
       e.preventDefault(); const f = e.target.elements, item = {};
-      ['title', 'channel', 'role', 'due', 'priority'].forEach(k => { item[k] = f[k].value; });
+      ['title', 'channel', 'role', 'due', 'priority', 'ch'].forEach(k => { item[k] = f[k].value; });
       await libSet('requests', 'add', { item }); closeModal(); toast('리퀘스트를 등록했습니다.', 'ok'); viewRequests(); refreshAcct();
     });
   });
@@ -1132,11 +1163,11 @@ function viewRequests() {
   const [w0, w1] = (S.acc && S.acc.week) || [today, today];
   const open = rs.filter(r => r.status !== '클로즈'), late = rs.filter(reqLate), closedWk = rs.filter(r => r.status === '클로즈' && r.closed_at >= w0 && r.closed_at <= w1);
   const k = (ko, v, cls) => `<div class="kpi k4"><span class="ko">${ko}</span><b class="${cls || ''}">${v}건</b></div>`;
-  const cols = 'grid-template-columns:80px 1fr 80px 90px 100px 100px 150px 40px';
+  const cols = 'grid-template-columns:80px 1fr 130px 80px 90px 100px 100px 150px 40px';
   $('#view').innerHTML = `<div class="stack"><div class="kpis">${k('오픈 리퀘스트', open.length)}${k('딜레이', late.length, late.length ? 'late' : '')}${k('이번 주 클로즈', closedWk.length)}</div>
     <div class="banner" id="cand"><span>회의록(Meeting Note)에서 리퀘스트 후보를 찾는 중…</span><span class="spacer"></span><button class="btn pri" id="candBtn" hidden>후보 보기</button><button class="btn" id="addReq">+ 리퀘스트 등록</button></div>
-    <div class="tbl"><div class="tbl-in" style="min-width:960px"><div class="tr th" style="${cols}"><span>접수</span><span>리퀘스트</span><span>채널</span><span>담당</span><span>데드라인</span><span>우선순위</span><span>상태</span><span></span></div>
-      ${rs.length ? rs.map(r => `<div class="tr" style="${cols}"><span class="muted">${r.received ? mdShort(r.received) : '—'}</span><b>${esc(r.title)}</b><span class="muted">${esc(r.channel || '—')}</span>
+    <div class="tbl"><div class="tbl-in" style="min-width:1060px"><div class="tr th" style="${cols}"><span>접수</span><span>리퀘스트</span><span>운영 채널</span><span>접수 경로</span><span>담당</span><span>데드라인</span><span>우선순위</span><span>상태</span><span></span></div>
+      ${rs.length ? rs.map(r => `<div class="tr" style="${cols}"><span class="muted">${r.received ? mdShort(r.received) : '—'}</span><b>${esc(r.title)}</b><span>${chCards().length ? `<select class="in sm" data-rch="${esc(r.id)}" aria-label="운영 채널">${chOptions(r.ch || '')}</select>` : '<span class="muted">—</span>'}</span><span class="muted">${esc(r.channel || '—')}</span>
         <span>${sel('role', roleOpts, r.role || '', `data-role="${esc(r.id)}"`)}</span><span class="${reqLate(r) ? 'late-t' : ''}">${r.due ? mdShort(r.due) : '—'}</span>
         <span>${sel('priority', ['Normal', 'High'], r.priority || 'Normal', `data-pri="${esc(r.id)}"`)}</span>
         <span class="row">${reqLate(r) ? stPill('딜레이', 'late') : ''}${sel('status', REQ_STATUS, r.status, `data-st="${esc(r.id)}"`)}</span><button class="lnk" data-rm="${esc(r.id)}" aria-label="삭제">✕</button></div>`).join('')
@@ -1145,6 +1176,7 @@ function viewRequests() {
   const v = $('#view'), after = fn => guard(async x => { await fn(x); viewRequests(); refreshAcct(); });
   $('#addReq').onclick = () => reqModal();
   v.querySelectorAll('[data-role]').forEach(x => x.onchange = after(() => libSet('requests', 'update', { id: x.dataset.role, item: { role: x.value } })));
+  v.querySelectorAll('[data-rch]').forEach(x => x.onchange = after(() => libSet('requests', 'update', { id: x.dataset.rch, item: { ch: x.value } })));
   v.querySelectorAll('[data-pri]').forEach(x => x.onchange = after(() => libSet('requests', 'update', { id: x.dataset.pri, item: { priority: x.value } })));
   v.querySelectorAll('[data-st]').forEach(x => x.onchange = after(() => libSet('requests', 'update', { id: x.dataset.st, item: { status: x.value } })));
   v.querySelectorAll('[data-rm]').forEach(b => b.onclick = after(() => libSet('requests', 'delete', { id: b.dataset.rm })));
@@ -1446,14 +1478,14 @@ const dayDiff = (a, b) => Math.round((new Date(+a.slice(0, 4), +a.slice(5, 7) - 
 /* Calendar(레일): 전 어카운트 일정을 읽기 전용으로 모아 본다. 주간 보기가 기본이고 월간으로 바꿀 수 있다.
    일정 추가·체크는 어카운트를 연 뒤 그 어카운트의 Content Calendar에서 한다. */
 const mondayOf = iso => isoAdd(iso, -((new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)).getDay() + 6) % 7));
-function calState() { const t = S.st.today; return S.hcal = S.hcal || { mode: 'week', wk: mondayOf(t), y: +t.slice(0, 4), m: +t.slice(5, 7), sel: t, only: '', role: '' }; }
+function calState() { const t = S.st.today; return S.hcal = S.hcal || { mode: 'week', wk: mondayOf(t), y: +t.slice(0, 4), m: +t.slice(5, 7), sel: t, only: '', role: '', ch: '' }; }
 function calHtml() {
   const H = calState(), today = S.st.today, pad = n => String(n).padStart(2, '0'), brands = S.st.clients;
-  const evs = (S.allEv || []).filter(e => (!H.only || e.client === H.only) && (!H.role || e.role === H.role));
+  const evs = (S.allEv || []).filter(e => (!H.only || e.client === H.only) && (!H.role || e.role === H.role) && (!H.ch || (H.ch === 'custom' ? /^custom-/.test(e.ch) : e.ch === H.ch)));
   const late = e => !e.done && e.type === '콘텐츠' && e.date < today;
   const sort = (a, b) => a.date.localeCompare(b.date) || a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title);
   const nm = e => e.brand.split(' (')[0];
-  const item = e => `<button class="wk-i evb" data-open="${esc(e.client)}" data-date="${esc(e.date)}"><span class="row" style="gap:6px"><span class="rcode s">${esc(e.role || '—')}</span><span class="bdot" style="background:${brandColor(e.client)}"></span><small>${esc(nm(e))}</small></span><span>${e.done ? '✓ ' : ''}${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</span>${late(e) ? '<small class="late-t">딜레이 · 포스팅 미확인</small>' : ''}</button>`;
+  const item = e => `<button class="wk-i evb" data-open="${esc(e.client)}" data-date="${esc(e.date)}"><span class="row" style="gap:6px"><span class="rcode s">${esc(e.role || '—')}</span><span class="bdot" style="background:${brandColor(e.client)}"></span><small>${esc(nm(e))}</small></span><span>${e.done ? '✓ ' : ''}${e.ch ? chIcon(e.ch, 12) + ' ' : ''}${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</span>${late(e) ? '<small class="late-t">딜레이 · 포스팅 미확인</small>' : ''}</button>`;
   let title, body;
   if (H.mode === 'week') {
     const days = [...Array(7)].map((_, i) => isoAdd(H.wk, i));
@@ -1475,6 +1507,7 @@ function calHtml() {
   return `<div class="home-cal"><div class="calbar"><button class="btn sm" id="hPrev" aria-label="이전">${ICONS.back}</button><b class="mth">${title}</b><button class="btn sm next" id="hNext" aria-label="다음">${ICONS.back}</button><button class="btn sm" id="hToday">오늘</button>
       <div class="seg" role="group" aria-label="보기"><button class="seg-b" data-mode="week" aria-pressed="${H.mode === 'week'}">주간</button><button class="seg-b" data-mode="month" aria-pressed="${H.mode === 'month'}">월간</button></div><span class="spacer"></span>
       <select class="in sm" id="hAcc" aria-label="어카운트 필터" style="width:auto"><option value="">전체 어카운트</option>${brands.map(c => `<option value="${esc(c.id)}" ${H.only === c.id ? 'selected' : ''}>${esc(c.name.split(' (')[0])}</option>`).join('')}</select>
+      <select class="in sm" id="hCh" aria-label="채널 필터" style="width:auto"><option value="">전체 채널</option>${OPCH.map(([id, l]) => `<option value="${id}" ${H.ch === id ? 'selected' : ''}>${l}</option>`).join('')}<option value="custom" ${H.ch === 'custom' ? 'selected' : ''}>기타(직접 입력)</option></select>
       <select class="in sm" id="hRole" aria-label="역할 필터" style="width:auto"><option value="">전체 역할</option>${ROLE_CARDS.map(r => `<option value="${r.code}" ${H.role === r.code ? 'selected' : ''}>${r.code} · ${r.ko}</option>`).join('')}</select></div>
     ${body}<p class="hint muted" style="font-size:12.5px;margin:6px 2px 0">모아 보기 전용이에요. 일정을 누르면 그 어카운트의 Content Calendar로 가요. 이 화면은 포스팅을 실행하지 않습니다.</p></div>`;
 }
@@ -1486,6 +1519,7 @@ function bindCal() {
   v.querySelectorAll('.home-cal [data-mode]').forEach(b => b.onclick = () => { H.mode = b.dataset.mode; redraw(); });
   $('#hAcc').onchange = e => { H.only = e.target.value; redraw(); };
   $('#hRole').onchange = e => { H.role = e.target.value; redraw(); };
+  $('#hCh').onchange = e => { H.ch = e.target.value; redraw(); };
   v.querySelectorAll('.home-cal [data-d]').forEach(b => b.onclick = () => { H.sel = b.dataset.d; redraw(); });
   v.querySelectorAll('.home-cal [data-open]').forEach(b => b.onclick = guard(async () => {
     const d = b.dataset.date; S.cal = { y: +d.slice(0, 4), m: +d.slice(5, 7), sel: d }; S.calMode = 'cal';
@@ -1603,6 +1637,39 @@ async function viewCalendarHome() {
   await loadAccounts(); if (S.view !== 'calendar') return;
   $('#view').innerHTML = `<div class="accounts-page">${pageHead('Calendar', '모든 어카운트의 일정을 한곳에서 봅니다. 주간 보기가 기본이에요.', false)}${S.st.clients.length ? calHtml() : '<div class="card pad"><div class="empty"><b>등록된 어카운트가 없어요</b>All Accounts에서 + New Account 로 등록하세요.</div></div>'}</div>`;
   bindHead(); if (S.st.clients.length) bindCal();
+}
+
+/* ---------- 채널 규격 (설정 › 채널 규격 편집): agency/knowledge/channel-specs.json 한 파일을 고친다 ---------- */
+async function viewSpecs() {
+  const D = await api('/api/channel-specs'); if (S.view !== 'specs') return;
+  const F = D.fields, KEYS = Object.keys(F), isLen = k => k === 'caption' || k === 'title';
+  const chip = it => it && it.status === 'verified' ? `<span class="pill-s ok">확인함 · ${esc(it.checked_at || '')}</span>` : it && (it.value || it.max) ? '<span class="pill-s">기본값 · 수정 가능</span>' : '<span class="pill-s warn">확인 필요</span>';
+  const row = (id, kind, k, it) => { it = it || {}; const key = `${id}|${kind}|${k}`;
+    return `<div class="sprow" data-sp="${esc(key)}"><b>${esc(F[k])}</b><div class="spin">${isLen(k)
+      ? `<input class="in sm" type="number" min="1" data-f="max" value="${esc(it.max ?? '')}" placeholder="최대 글자 수 (확인 필요)">${k === 'caption' ? `<input class="in sm" type="number" min="1" data-f="visible_hint" value="${esc(it.visible_hint ?? '')}" placeholder="더보기 전 권장 (선택)">` : ''}`
+      : `<input class="in sm" data-f="value" value="${esc(it.value ?? '')}" placeholder="확인 필요" maxlength="${k === 'hook' ? 400 : 120}">`}</div>
+      <div class="spst">${chip(it)}<label class="pick"><input type="checkbox" data-f="verified" ${it.status === 'verified' ? 'checked' : ''}><span>확인함</span></label><input class="in sm" data-f="source" value="${esc(it.source || '')}" placeholder="출처(URL·문서)" maxlength="200"></div></div>`; };
+  const collect = el => { const o = {}; el.querySelectorAll('.sprow').forEach(r => { const k = r.dataset.sp.split('|')[2], it = {}; r.querySelectorAll('[data-f]').forEach(i => { it[i.dataset.f] = i.type === 'checkbox' ? i.checked : i.value.trim(); }); o[k] = it; }); return o; };
+  $('#view').innerHTML = `<div class="accounts-page">${pageHead('채널 규격', '채널마다 콘텐츠(오가닉)와 광고 규격의 기본값이에요. 플랫폼 정책은 바뀌니까 모든 값은 "기본값 · 수정 가능"이고, 확실하지 않은 값은 비워 둬요(지어내지 않아요).', false)}
+    <div class="note info">"확인함"은 공식 문서에서 직접 확인하고 출처를 적었을 때만 눌러 주세요. 확인함으로 표시된 길이만 AI 카피 검수(/copy)에서 초과를 FAIL로 판정하고, 나머지는 참고값으로만 보여 줘요.</div>
+    ${Object.entries(D.channels).map(([id, ch]) => `<section class="card pad pbs"><div class="pbh"><h2>${esc(ch.label)} <small class="muted">${esc(id)}</small></h2></div>
+      ${['organic', 'ads'].map(kind => `<div class="spk" data-card="${esc(id)}|${kind}"><div class="sec-t" style="margin:10px 0 6px">${kind === 'organic' ? '콘텐츠(오가닉)' : '광고'}</div>${KEYS.map(k => row(id, kind, k, (ch[kind] || {})[k])).join('')}<div class="row end"><button class="btn sm pri" data-save-ch="${esc(id)}|${kind}">${kind === 'organic' ? '콘텐츠' : '광고'} 규격 저장</button></div></div>`).join('')}</section>`).join('')}
+    <section class="card pad pbs"><div class="pbh"><h2>광고 매체 <small class="muted">운영 채널이 아닌 매체 · /copy 의 광고 규격 선택에 쓰여요</small></h2></div>
+      ${(D.ad_media || []).map(m => { const id = `${m.channel}|${m.ad_format}`; return `<div class="spk" data-media="${esc(id)}"><div class="sec-t" style="margin:10px 0 6px">${esc(m.channel)} · ${esc(m.ad_format)} ${m.status === 'verified' ? `<span class="pill-s ok">확인함 · ${esc(m.checked_at || '')}</span>` : '<span class="pill-s">기본값 · 수정 가능</span>'}</div>
+        ${Object.entries(m.fields).map(([name, f]) => `<div class="sprow" data-mf="${esc(name)}"><b>${esc(name)}</b><div class="spin"><input class="in sm" type="number" min="1" value="${esc(f.max)}" aria-label="${esc(name)} 최대 글자 수"></div><div></div></div>`).join('')}
+        <div class="spst" style="margin:6px 0"><label class="pick"><input type="checkbox" data-mv ${m.status === 'verified' ? 'checked' : ''}><span>확인함</span></label><input class="in sm" data-ms value="${esc(m.source || '')}" placeholder="출처(URL·문서)" maxlength="200"></div>
+        <div class="row end"><button class="btn sm pri" data-save-media="${esc(id)}">저장</button></div></div>`; }).join('')}</section></div>`;
+  bindHead();
+  $('#view').querySelectorAll('[data-save-ch]').forEach(b => b.onclick = guard(async () => {
+    const [id, kind] = b.dataset.saveCh.split('|'), card = b.closest('.spk');
+    await api('/api/channel-specs', { section: 'channel', id, kind, items: collect(card) }); toast('채널 규격을 저장했어요.', 'ok'); viewSpecs();
+  }));
+  $('#view').querySelectorAll('[data-save-media]').forEach(b => b.onclick = guard(async () => {
+    const card = b.closest('.spk'), items = {};
+    card.querySelectorAll('[data-mf]').forEach(r => { items[r.dataset.mf] = { max: r.querySelector('input').value.trim() }; });
+    items._status = { verified: card.querySelector('[data-mv]').checked, source: card.querySelector('[data-ms]').value.trim() };
+    await api('/api/channel-specs', { section: 'ad_media', id: b.dataset.saveMedia, items }); toast('광고 규격을 저장했어요.', 'ok'); viewSpecs();
+  }));
 }
 
 /* ---------- 명령 화면 ---------- */
@@ -1856,7 +1923,7 @@ function viewResults() {
     <div class="row" style="margin-bottom:14px"><label class="lbl" for="rp" style="font-weight:600">프로젝트</label>
       <select class="in" id="rp" style="max-width:360px">${ps.map(p => `<option value="${esc(p.id)}" ${R.project === p.id ? 'selected' : ''}>${esc(p.name)} · ${esc(p.id)}</option>`).join('')}</select></div>
     <div class="split"><div class="card flist">${R.items.length ? R.items.map((it, i) =>
-      `<button class="fitem" data-i="${i}" aria-current="${R.sel?.name === it.name}"><div class="n">${esc(it.name)}</div><div class="m">${stateChip(it.state)}<span>${AREA[it.area]}</span></div></button>`).join('')
+      `<button class="fitem" data-i="${i}" aria-current="${R.sel?.name === it.name}"><div class="n">${esc(it.name)}</div><div class="m">${stateChip(it.state)}<span>${AREA[it.area]}</span>${it.ch ? chChip(it) : ''}</div></button>`).join('')
       : '<div class="empty"><b>아직 결과물이 없어요</b>명령을 실행하면 여기에 쌓입니다.</div>'}</div>
       <div class="card viewer" id="viewer"></div></div>`;
   $('#rp').onchange = guard(async e => { R.project = e.target.value; await loadResults(); viewResults(); });
@@ -1865,12 +1932,14 @@ function viewResults() {
   if (!R.sel) { v.innerHTML = '<div class="empty"><b>파일을 선택하세요</b>왼쪽 목록에서 열어 볼 수 있습니다.</div>'; return; }
   const it = R.sel; const can = it.state === 'review_passed';
   v.innerHTML = `<div class="viewer-h"><b>${esc(it.name)}</b>${stateChip(it.state)}<span class="spacer"></span>
+      ${chCards().length ? `<select class="in sm" id="dch" aria-label="채널" style="width:auto"><option value="">채널 없음</option>${chCards().map(c => `<option value="${esc(c.id)}" ${c.id === it.ch ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}</select>` : ''}
       <button class="btn sm" id="cp">복사</button>
       ${it.state ? `<button class="btn sm pri" id="ap" ${can ? '' : 'disabled'} title="${can ? '' : 'AI 검수를 통과한 산출물만 컨펌할 수 있습니다'}">컨펌</button>` : ''}</div>
     ${it.state === 'approved' ? `<div class="viewer-b" style="padding-bottom:0"><div class="note info">${esc(it.by || '')} 님이 컨펌했습니다.</div></div>` : ''}
     ${/^(copy|pdp)/i.test(it.name) && bannedHits(R.text).length ? `<div class="viewer-b" style="padding-bottom:0"><div class="note bad">Playbook 금지어가 들어 있어요: ${bannedHits(R.text).map(w => `<b>${esc(w)}</b>`).join(', ')}. 컨펌 전에 고쳐 주세요.</div></div>` : ''}
     <div class="viewer-b">${renderFile(it.name, R.text)}</div>`;
   $('#cp').onclick = () => navigator.clipboard.writeText(R.text).then(() => toast('복사했습니다.', 'ok'), () => toast('복사하지 못했습니다.', 'bad'));
+  const dch = $('#dch'); if (dch) dch.onchange = guard(async e => { await api('/api/deliverable-channel', { project: R.project, file: it.name, ch: e.target.value }); await loadResults(); await openFile(S.res.items.find(i => i.name === it.name) || it, true); viewResults(); toast('채널을 저장했어요.', 'ok'); });
   const ap = $('#ap'); if (ap) ap.onclick = () => approveModal(it);
 }
 function approveModal(it) {

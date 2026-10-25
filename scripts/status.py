@@ -73,7 +73,7 @@ def require(client, project, min_stage):
     return st
 
 
-def set_deliverable(client, project, filename, state, by=None, note=None):
+def set_deliverable(client, project, filename, state, by=None, note=None, ch=None):
     if state not in TRANSITIONS:
         raise AgencyError(f"알 수 없는 상태 '{state}'.")
     st = load(client, project)
@@ -85,9 +85,26 @@ def set_deliverable(client, project, filename, state, by=None, note=None):
         raise AgencyError(f"'{cur}' -> '{state}' 전환은 허용되지 않습니다.")
     if state == "approved" and not (by and by.strip()):
         raise AgencyError("approved 는 사용자(승인 담당자) 이름이 필요합니다. AI 검수 통과는 승인이 아닙니다.")
+    prev = st["deliverables"].get(filename) or {}
     st["deliverables"][filename] = {"state": state, "by": by or "ai-review", "at": common.now_kst().isoformat()}
     if note:
         st["deliverables"][filename]["note"] = note
+    keep = ch if ch is not None else prev.get("ch")   # 채널 태그는 상태가 바뀌어도 유지한다
+    if keep:
+        st["deliverables"][filename]["ch"] = keep
+    save(client, project, st)
+    return st
+
+
+def set_channel(client, project, filename, ch):
+    """결과물의 채널 태그(운영 채널 id)만 바꾼다. 상태·이력은 건드리지 않는다. ch=None 이면 해제."""
+    st = load(client, project)
+    if filename not in st["deliverables"]:
+        raise AgencyError("등록되지 않은 산출물입니다.")
+    if ch:
+        st["deliverables"][filename]["ch"] = ch
+    else:
+        st["deliverables"][filename].pop("ch", None)
     save(client, project, st)
     return st
 

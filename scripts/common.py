@@ -183,6 +183,39 @@ def playbook_bans(client_id):
     return [w for w in ((d or {}).get("rules") or {}).get("banned", []) if w]
 
 
+SPEC_FILE_PARTS = ("agency", "knowledge", "channel-specs.json")
+
+
+def channel_specs_raw():
+    return json.loads(root().joinpath(*SPEC_FILE_PARTS).read_text(encoding="utf-8"))
+
+
+def channel_specs_legacy():
+    """채널 규격(channel-specs.json 의 channels·ad_media)을 /copy·copy_check 가 쓰는 평평한 목록으로 펼친다.
+    길이 값(caption·title 의 max)이 있는 것만 나온다. 운영 채널의 organic 은 legacy_id(예: instagram-feed), ads 는 '{id}-ads' 로 부른다."""
+    d = channel_specs_raw()
+    out = []
+    for cid, ch in (d.get("channels") or {}).items():
+        for kind in ("organic", "ads"):
+            k = ch.get(kind) or {}
+            fields, ref = {}, None
+            cap, tit = k.get("caption") or {}, k.get("title") or {}
+            if cap.get("max"):
+                fields["caption"] = {"max": cap["max"]}
+                ref = cap
+                if cap.get("visible_hint"):
+                    fields["caption_visible_hint"] = {"max": cap["visible_hint"]}
+            if tit.get("max"):
+                fields["title"] = {"max": tit["max"]}
+                ref = ref or tit
+            if fields:
+                out.append({"channel": (ch.get("legacy_id") if kind == "organic" else None) or (cid if kind == "organic" else cid + "-ads"),
+                            "ad_format": "caption" if kind == "organic" else "ad", "fields": fields, "count": ref.get("count", "len"),
+                            "status": "verified" if ref.get("status") == "verified" else "unverified", "source": ref.get("source"),
+                            "checked_at": ref.get("checked_at"), "memo": ref.get("memo", "")})
+    return out + list(d.get("ad_media") or [])
+
+
 def channels_current(client_id):
     """clients/{id}/channels.json 의 운영 채널 카드 목록(다른 화면이 읽는 현재 값). 없으면 빈 리스트."""
     try:

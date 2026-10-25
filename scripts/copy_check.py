@@ -33,8 +33,7 @@ def width(text, mode):
 
 
 def load_spec(channel, ad_format=None):
-    f = common.root() / "agency" / "knowledge" / "channel-specs.json"
-    specs = json.loads(f.read_text(encoding="utf-8"))["specs"]
+    specs = common.channel_specs_legacy()
     cand = [s for s in specs if s["channel"] == channel and (ad_format is None or s["ad_format"] == ad_format)]
     return cand[0] if cand else None
 

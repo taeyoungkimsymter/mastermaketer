@@ -786,3 +786,21 @@ button.wk-i:hover{border-color:var(--accent)}
 .chh{display:flex;align-items:center;gap:10px}
 .chh b{font-size:15px}
 .chcard textarea.in{min-height:56px}
+
+/* ---------- 채널 규격 ---------- */
+.sprow{display:grid;grid-template-columns:120px minmax(220px,1.3fr) minmax(260px,1.2fr);gap:10px;align-items:center;padding:6px 0;border-top:1px dashed var(--border)}
+.sprow b{font-size:13px}
+.spin{display:flex;gap:6px}
+.spin .in{flex:1}
+.spst{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spst .in{flex:1;min-width:140px}
+.pill-s.warn{background:var(--warn-soft);color:var(--warn)}
+@media(max-width:900px){.sprow{grid-template-columns:1fr}}
+
+/* ---------- 채널 태그 ---------- */
+.chi{vertical-align:-2px;flex:none}
+.chip.chc,.fchip.chc{display:inline-flex;align-items:center;gap:5px}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.pbsum.warnrow{border-color:var(--warn-soft);background:var(--warn-soft)}
+.pbsum.warnrow b{color:var(--warn)}
+.ev .chi{vertical-align:-1px}
