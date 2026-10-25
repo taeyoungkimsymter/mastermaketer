@@ -78,7 +78,7 @@ def check_field(name, value, client):
     elif name == "file":
         p = Path(value)
         if not RE_FILE.match(value) or p.is_absolute() or ".." in p.parts or ":" in value:
-            raise AgencyError("회의록 파일은 고객사 폴더 안의 상대 경로여야 합니다(예: inbox/meeting.md).")
+            raise AgencyError("회의록 파일은 어카운트 폴더 안의 상대 경로여야 합니다(예: inbox/meeting.md).")
         target = (common.client_dir(client) / p).resolve()
         if common.client_dir(client).resolve() not in target.parents or not target.is_file():
             raise AgencyError(f"회의록 파일을 찾을 수 없습니다: {value}")
@@ -217,7 +217,7 @@ def start_job(prompt, label, client, session_id=None):
 def need_active():
     c = common.get_active()
     if not c:
-        raise AgencyError("먼저 고객사를 선택하세요.")
+        raise AgencyError("먼저 어카운트를 선택하세요.")
     return c
 
 
@@ -363,7 +363,7 @@ def lib_change(client, kind, op, item, item_id):
                 if name == "type" and kind == "events":
                     v = v or "기타"
                     if v not in EVENT_TYPES:
-                        raise AgencyError("일정 유형은 콘텐츠/기획/촬영/회의/기타 중 하나입니다.")
+                        raise AgencyError("일정 유형은 콘텐츠/기획/슈팅/회의/기타 중 하나입니다.")
                 if kind == "requests":
                     if name == "channel":
                         v = v or "기타"
@@ -1236,6 +1236,11 @@ class Handler(BaseHTTPRequestHandler):
             return {"fields": read_brief(c), "labels": list(BRIEF_FIELDS)}
         if path == "/api/buddy-char" and method == "POST":
             return {"char": write_buddy(need_active(), clean_text(b.get("char"), 10))}
+        if path == "/api/team-set" and method == "POST":
+            cid = common.validate_id(clean_text(b.get("client"), 32), "client_id")
+            if cid not in {c["id"] for c in list_clients()}:
+                raise AgencyError("알 수 없는 어카운트입니다.")
+            return {"team": write_team(cid, b.get("team"))}
         if path == "/api/team" and method == "POST":
             return {"team": write_team(need_active(), b.get("team"))}
         if path == "/api/performance":

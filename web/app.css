@@ -729,3 +729,9 @@ small.ok{color:var(--ok)}small.warn{color:var(--warn)}small.late{color:var(--lat
 .empty-acc{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:28px}
 .empty-acc b{font-size:16px}
 .empty-acc p{margin:0 0 6px;color:var(--muted);font-size:13.5px}
+
+/* ---------- Team 화면 ---------- */
+.tm{height:34px}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.pp{border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.pp .row{flex-wrap:wrap;gap:6px}

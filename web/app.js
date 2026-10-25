@@ -25,6 +25,7 @@ const ICONS = {
   sun: ic('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>'),
   moon: ic('<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>'),
   buddy: ic('<rect x="4" y="5" width="16" height="14" rx="4"/><path d="M9 11v1M15 11v1M10 15.5c1.2.8 2.8.8 4 0"/>'),
+  team: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.4 3.5 5.2"/>'),
   sliders: ic('<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/>'),
   grid: ic('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
   ring: ic('<circle cx="12" cy="12" r="7"/>'),
@@ -46,20 +47,20 @@ const ICONS = {
 
 /* ---------- 명령 정의 ---------- */
 const CMDS = {
-  'new-client': { title: '새 고객사 등록', icon: 'plus', group: null,
+  'new-client': { title: '새 어카운트 등록', icon: 'plus', group: null,
     desc: '짧은 인터뷰로 브랜드 정보와 계약 범위를 정리합니다. 모르는 항목은 "미정"으로 남습니다.' },
   copy: { title: '카피 3안', icon: 'copy', group: '업무',
     desc: '소구와 전략이 서로 다른 카피 3안을 쓰고, 글자 수·금지어·위험 표현을 기계 검수한 뒤 독립 검수까지 마칩니다.' },
   report: { title: '성과 리포트', icon: 'report', group: '업무',
     desc: '광고 CSV·엑셀을 검증하고 스크립트로 지표를 계산해, 해석과 다음 행동이 담긴 리포트를 만듭니다.' },
   meeting: { title: '회의록 정리', icon: 'meeting', group: '업무',
-    desc: '결정사항·미결사항·액션아이템을 뽑고 피드백은 "후보"로만 저장합니다. 승인 전에는 규칙이 되지 않습니다.' },
-  video: { title: '영상 기획', icon: 'video', group: '영상·촬영',
+    desc: '결정사항·미결사항·액션아이템을 뽑고 피드백은 "후보"로만 저장합니다. 컨펌 전에는 규칙이 되지 않습니다.' },
+  video: { title: '영상 기획', icon: 'video', group: '영상·슈팅',
     desc: '컨셉 3안을 제시하고 멈춥니다. 직접 고르거나 위임한 뒤에야 구성·스크립트·콘티가 만들어집니다.' },
-  'shoot-plan': { title: '촬영 계획', icon: 'shoot', group: '영상·촬영',
-    desc: '선택된 콘티로 일정·콜시트·준비물·리스크 표를 만듭니다. 확인되지 않은 허가·예약은 확정으로 쓰지 않습니다.' },
-  onset: { title: '현장 대응', icon: 'onset', group: '영상·촬영',
-    desc: '촬영 중 돌발 상황에 즉시 조치, 대체 순서, 고객사 보고 문구를 짧게 답합니다.' },
+  'shoot-plan': { title: '슈팅 계획', icon: 'shoot', group: '영상·슈팅',
+    desc: '선택된 콘티로 일정·콜시트·준비물·리스크 표를 만듭니다. 확인되지 않은 허가·예약은 픽스로 쓰지 않습니다.' },
+  onset: { title: '현장 대응', icon: 'onset', group: '영상·슈팅',
+    desc: '슈팅 중 돌발 상황에 즉시 조치, 대체 순서, 클라이언트 보고 문구를 짧게 답합니다.' },
 };
 const ROLES = {
   researcher: '리서처', strategist: '전략 기획자', copywriter: '카피라이터', pd: 'PD',
@@ -68,7 +69,7 @@ const ROLES = {
 };
 const STATES = {
   draft: ['초안', ''], review_passed: ['AI 검수 통과', 'ok'], needs_revision: ['수정 필요', 'warn'],
-  approved: ['승인됨', 'acc'], archived: ['보관', ''],
+  approved: ['컨펌됨', 'acc'], archived: ['보관', ''],
 };
 const AREA = { deliverables: '산출물', review: '검수', research: '조사·분석', production: '제작' };
 
@@ -209,7 +210,7 @@ const TABS = [
     subs: [['copy', 'Copy Options', 'copy'], ['pdp', 'Detail Page', 'pdp']] },
   { id: 'art', label: 'Art', en: 'Art', code: 'AD', desc: '레퍼런스를 고르고 광고 소재 제작으로 이어갑니다.',
     subs: [['adstudio', 'Ad Creative', 'adstudio']] },
-  { id: 'film', label: 'Film', en: 'Film', code: 'PD', desc: '영상 기획부터 촬영 계획, 현장 대응까지 맡습니다. 컨셉은 3안을 제시하고 선택을 기다립니다.',
+  { id: 'film', label: 'Film', en: 'Film', code: 'PD', desc: '영상 기획부터 슈팅 계획, 현장 대응까지 맡습니다. 컨셉은 3안을 제시하고 선택을 기다립니다.',
     subs: [['video', 'Storyboard', 'video'], ['shoot-plan', 'Shooting Plan', 'shoot-plan'], ['onset', 'On-set', 'onset']] },
   { id: 'performance', label: 'Performance', en: 'Performance', code: 'MP', desc: '매체 성과를 조회·분석합니다. AE가 링크를 등록한 콘텐츠의 성과도 여기서 모읍니다. 예산 변경이나 집행은 하지 않습니다.',
     subs: [['media', 'Media Report', 'ads-overview'], ['kw', 'Search Keyword', 'lib-keywords'], ['content', 'Content Performance', 'content-perf'], ['report', 'Performance Report', 'report']] },
@@ -217,16 +218,16 @@ const TABS = [
 /* ⋯ 메뉴로 옮긴 화면 */
 const MORE = [['results', '결과물', 'results', SUBDESC_RESULTS()], ['feedback', '피드백 규칙', 'feedback', SUBDESC_FEEDBACK()]];
 function SUBDESC_RESULTS() { return 'AI가 만든 초안을 확인하고 컨펌합니다. 모든 파일은 새 버전(-v숫자)으로 쌓입니다.'; }
-function SUBDESC_FEEDBACK() { return '사람이 승인한 규칙만 이후 작업에 적용됩니다. 후보는 승인 전까지 쓰이지 않습니다.'; }
+function SUBDESC_FEEDBACK() { return '대표가 컨펌한 규칙만 이후 작업에 적용됩니다. 후보는 컨펌 전까지 쓰이지 않습니다.'; }
 const SUBDESC = {
   'ads-overview': '광고 플랫폼별 성과를 한곳에서 봅니다. 조회·분석만 하며 예산 변경이나 집행은 하지 않습니다.',
-  cal: '광고주와 협의한 콘텐츠·기획 일정을 캘린더에 정리하고, 업로드 여부를 확인해 체크합니다.',
+  cal: '클라이언트와 협의한 콘텐츠·기획 일정을 캘린더에 정리하고, 포스팅 여부를 확인해 체크합니다.',
   'lib-references': '참고할 광고·영상·페이지 레퍼런스를 보드별로 모으고 기획하면서 함께 봅니다.',
   'lib-competitors': '경쟁사·벤치마크 브랜드를 모아 두고 기획과 제작 중에 꺼내 봅니다.',
   adstudio: '레퍼런스를 고르고 브랜드 정보를 확인한 뒤 카피·영상 제작으로 이어갑니다.',
   pdp: '상세페이지용 카피를 만듭니다. 레퍼런스와 경쟁사를 함께 보면서 씁니다.',
-  results: 'AI가 만든 초안을 확인하고 승인합니다. 모든 파일은 새 버전(-v숫자)으로 쌓입니다.',
-  feedback: '사람이 승인한 규칙만 이후 작업에 적용됩니다. 후보는 승인 전까지 쓰이지 않습니다.',
+  results: 'AI가 만든 초안을 확인하고 컨펌합니다. 모든 파일은 새 버전(-v숫자)으로 쌓입니다.',
+  feedback: '대표가 컨펌한 규칙만 이후 작업에 적용됩니다. 후보는 컨펌 전까지 쓰이지 않습니다.',
 };
 const locate = v => { for (const t of TABS) for (const s of t.subs) if (s[2] === v) return [t.id, s[0]]; return null; };
 const moreOf = v => MORE.find(m => m[2] === v);
@@ -238,7 +239,7 @@ const fmtDate = ts => new Date(ts * 1000).toLocaleDateString('ko-KR', { timeZone
 function toggleTheme() {
   const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = n; store.set('theme', n); renderSide();
-  if (S.view === 'welcome' || S.view === 'calendar') render();
+  if (['welcome', 'calendar', 'team', 'reports'].includes(S.view)) render();
 }
 /* ---------- 역할 탭 외곽선 아이콘 (24px, 선 1.8, 색은 currentColor — docs 시안 side-tabs-v2) ---------- */
 const OUTLINE = {
@@ -268,14 +269,16 @@ const accOf = id => ((S.acc && S.acc.accounts) || []).find(x => x.id === id);
 const shortName = c => c.name.split(' (')[0];
 function renderSide() {
   const a = S.st.active, cl = S.st.clients;
-  const home = S.view === 'welcome' || S.view === 'calendar' || !a;
+  const home = ['welcome', 'calendar', 'team', 'reports'].includes(S.view) || !a;
   const run = S.st.running || (S.run && S.run.running);
   const dark = document.documentElement.dataset.theme === 'dark';
   const connTxt = !S.st.claude ? 'Claude Code 를 찾을 수 없음' : run ? '작업 중' : '연결됨';
-  const onAcc = S.view !== 'calendar';
+  const on = { cal: S.view === 'calendar', team: S.view === 'team', rep: S.view === 'reports' };
+  const onAcc = !on.cal && !on.team && !on.rep;
   $('#rail').innerHTML = `<span class="r-logo" role="img" aria-label="마스터마케터">${logoSvg(40, '#4B48D0', 6, 3.5)}</span>
     <button class="r-btn ${onAcc ? 'on' : ''}" data-home title="All Accounts" aria-label="All Accounts" ${onAcc ? 'aria-current="page"' : ''}>${ICONS.grid}</button>
-    <button class="r-btn ${!onAcc ? 'on' : ''}" data-cal title="Calendar" aria-label="Calendar" ${!onAcc ? 'aria-current="page"' : ''}>${ICONS.calendar}</button>
+    <button class="r-btn ${on.cal ? 'on' : ''}" data-cal title="Calendar" aria-label="Calendar" ${on.cal ? 'aria-current="page"' : ''}>${ICONS.calendar}</button>
+    <button class="r-btn ${on.team ? 'on' : ''}" data-team title="Team" aria-label="Team" ${on.team ? 'aria-current="page"' : ''}>${ICONS.team}</button>
     <span class="spacer"></span>
     <button class="r-btn" data-buddy title="버디 띄우기" aria-label="버디 띄우기">${ICONS.buddy}</button>
     <button class="r-btn" data-settings title="설정" aria-label="설정">${ICONS.sliders}</button>
@@ -283,6 +286,7 @@ function renderSide() {
     <span class="r-conn" title="${connTxt}"><span class="dot ${!S.st.claude ? 'bad' : run ? 'run' : 'ok'}"></span></span>`;
   $('#rail').querySelector('[data-home]').onclick = () => go('welcome');
   $('#rail').querySelector('[data-cal]').onclick = () => go('calendar');
+  $('#rail').querySelector('[data-team]').onclick = () => go('team');
   $('#rail').querySelector('[data-theme-toggle]').onclick = toggleTheme;
   $('#rail').querySelector('[data-settings]').onclick = settingsModal;
   $('#rail').querySelector('[data-buddy]').onclick = guard(async () => {
@@ -324,7 +328,7 @@ function myTasksHtml(code) {
 /* 어카운트 헤더 · 가로 탭 · 탭 제목과 칩(세부 메뉴) */
 function renderAcctHead() {
   const el = $('#acctHead'), a = S.st.active;
-  const show = a && !['welcome', 'calendar', 'new-client'].includes(S.view);
+  const show = a && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(S.view);
   if (!show) { el.innerHTML = ''; return; }
   const cl = S.st.clients.find(c => c.id === a), acc = accOf(a) || {}, tab = TABS.find(t => t.id === S.tab), more = moreOf(S.view);
   const pend = S.ov.filter(i => i.state === 'review_passed').length, cand = S.fb.filter(f => f.status === '후보').length;
@@ -359,8 +363,8 @@ function renderTop() {
 
 function switchClientModal(to) {
   const busy = S.run && S.run.running;
-  modal(`<h3>${to ? esc((S.st.clients.find(c => c.id === to) || {}).name || to) + '(으)로 바꾸시겠어요?' : '고객사를 바꾸시겠어요?'}</h3>
-    <p class="muted">고객사 정보가 섞이지 않도록 한 번에 한 고객사만 작업합니다. 전환하면 현재 고객사 세션이 해제되고 대화 내용도 비워집니다. 저장된 결과물은 그대로 남습니다.</p>
+  modal(`<h3>${to ? esc((S.st.clients.find(c => c.id === to) || {}).name || to) + '(으)로 바꾸시겠어요?' : '어카운트를 바꾸시겠어요?'}</h3>
+    <p class="muted">어카운트 정보가 섞이지 않도록 한 번에 한 어카운트만 작업합니다. 전환하면 현재 어카운트 세션이 해제되고 대화 내용도 비워집니다. 저장된 결과물은 그대로 남습니다.</p>
     ${busy ? '<div class="note bad">작업이 진행 중입니다. 끝나거나 중단한 뒤에 전환할 수 있습니다.</div>' : ''}
     <div class="row end"><button class="btn" id="m-no">취소</button><button class="btn pri" id="m-ok" ${busy ? 'disabled' : ''}>세션 해제하고 전환</button></div>`,
   m => {
@@ -396,12 +400,12 @@ function goSub(tab, sub) {
   return go(t.subs.find(y => y[0] === sub)[2], t.id, sub);
 }
 async function go(v, tab, sub) {
-  if (!S.st.active && v !== 'welcome' && v !== 'calendar' && v !== 'new-client') v = 'welcome';
+  if (!S.st.active && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(v)) v = 'welcome';
   S.view = v;
   const loc = tab ? [tab, sub] : locate(v);
   if (loc && S.st.active) [S.tab, S.sub] = loc; else S.tab = S.sub = null;
   if (S.detail) { S.detail = null; renderDetail(); }
-  if (S.st.active && !['welcome', 'calendar', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview()]);
+  if (S.st.active && !['welcome', 'calendar', 'team', 'reports', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview()]);
   if (v === 'overview') await Promise.all([loadPerfWeek(), loadBriefState()]);
   if (v === 'results') await loadResults();
   if (v === 'feedback') { try { S.fb = (await api('/api/feedback')).items; } catch (e) { toast(e.message, 'bad'); } }
@@ -412,6 +416,7 @@ function render() {
   const v = S.view;
   if (v === 'welcome') return viewAccounts();
   if (v === 'calendar') return viewCalendarHome();
+  if (v === 'team') return viewTeam();
   if (v === 'results') return viewResults();
   if (v === 'feedback') return viewFeedback();
   if (v === 'overview') return viewAcctOverview();
@@ -429,8 +434,8 @@ function render() {
 /* ---------- 탭별 전체보기 ---------- */
 function upcomingHtml() {
   const up = S.lib.events.filter(e => !e.done && (e.date >= S.st.today || overdue(e))).sort(evSort).slice(0, 6);
-  return `<div class="sec-t">다가오는 일정 · 확인 필요</div><div class="card tl">${up.length ? up.map(e => `<button class="tl-r link" data-ev="${esc(e.date)}"><b>${esc(e.title)}</b><span class="chip" data-t="${esc(e.type)}">${esc(e.type)}</span><span class="spacer"></span>${overdue(e) ? '<span class="chip bad">지연</span>' : ''}<small>${esc(e.date.slice(5))}</small></button>`).join('')
-    : '<div class="empty"><b>예정된 일정이 없어요</b>캘린더에서 광고주와 협의한 일정을 추가하세요.</div>'}</div>`;
+  return `<div class="sec-t">다가오는 일정 · 확인 필요</div><div class="card tl">${up.length ? up.map(e => `<button class="tl-r link" data-ev="${esc(e.date)}"><b>${esc(e.title)}</b><span class="chip" data-t="${esc(e.type)}">${esc(typeLabel(e.type))}</span><span class="spacer"></span>${overdue(e) ? '<span class="chip bad">딜레이</span>' : ''}<small>${esc(e.date.slice(5))}</small></button>`).join('')
+    : '<div class="empty"><b>예정된 일정이 없어요</b>캘린더에서 클라이언트와 협의한 일정을 추가하세요.</div>'}</div>`;
 }
 async function loadOverview() {
   const ps = S.ws.projects.map(p => p.id); if (!ps.includes('general')) ps.push('general');
@@ -617,7 +622,7 @@ async function saveRep(by) { if (by && by !== S.st.rep) S.st.rep = (await api('/
 function bindRep(m) { const b = m.querySelector('[data-rep-edit]'); if (b) b.onclick = () => { closeModal(); settingsModal(); }; }
 function settingsModal() {
   modal(`<h3>설정</h3>
-    <div class="field"><label class="lbl" for="rep">대표 이름</label><input class="in" id="rep" value="${esc(S.st.rep)}" maxlength="40" placeholder="예: 김대표"><span class="hint">컨펌·수정 요청·피드백 규칙 승인에 자동으로 쓰입니다. 이 PC의 .agency-state/ 에만 저장됩니다.</span></div>
+    <div class="field"><label class="lbl" for="rep">대표 이름</label><input class="in" id="rep" value="${esc(S.st.rep)}" maxlength="40" placeholder="예: 김대표"><span class="hint">컨펌·수정 요청·피드백 규칙 컨펌에 자동으로 쓰입니다. 이 PC의 .agency-state/ 에만 저장됩니다.</span></div>
     <div class="field" style="margin-top:12px"><span class="lbl">버디 크기</span><div class="seg" role="radiogroup" aria-label="버디 크기">${[['small', '작게'], ['normal', '보통'], ['large', '크게']].map(([k, l]) => `<button type="button" class="seg-b" role="radio" data-bs="${k}" aria-checked="${(S.st.buddy_size || 'small') === k}" aria-pressed="${(S.st.buddy_size || 'small') === k}">${l}</button>`).join('')}</div><span class="hint">바탕화면 버디의 크기예요. 저장하면 30초 안에 바뀌어요.</span></div>
     <div class="field" style="margin-top:12px"><span class="lbl">버디 방해 금지</span>
       <label class="pick"><input type="checkbox" id="dndOn" ${(S.st.dnd || {}).enabled ? 'checked' : ''}><span>이 시간에는 버디가 쉬어요 (긴급만 작은 배지로 남아요)</span></label>
@@ -739,7 +744,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.drawer &
 /* ---------- 스케줄 캘린더 ---------- */
 /* 광고주와 협의한 일정을 직접 적고, 콘텐츠 업로드 여부를 사람이 확인해 체크한다. 이 화면은 업로드·게시를 하지 않는다. */
 const EVENT_TYPES = ['콘텐츠', '기획', '촬영', '회의', '기타'];
-const doneLabel = e => e.type === '콘텐츠' ? '업로드 완료' : '완료';
+const typeLabel = t => t === '촬영' ? '슈팅' : t;   // 저장된 값은 '촬영' 그대로, 화면 표시만 '슈팅'
+const doneLabel = e => e.type === '콘텐츠' ? '포스팅 완료' : '완료';
 const overdue = e => !e.done && e.type === '콘텐츠' && e.date < S.st.today;
 const reqLate = r => r.status !== '클로즈' && r.due && r.due < S.st.today;
 const evRole = e => e.role || EVENT_ROLE[e.type] || '';
@@ -747,8 +753,8 @@ const evSort = (a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b
 async function evChange(op, extra) { S.lib = await api('/api/library', { kind: 'events', op, ...extra }); }
 function evRow(e) {
   return `<div class="evrow ${e.done ? 'done' : ''}"><label class="pick"><input type="checkbox" data-tg="${esc(e.id)}" ${e.done ? 'checked' : ''}><span><b>${esc(e.title)}</b>${e.sample ? ' <span class="tag">예시</span>' : ''}</span></label>
-    <div class="row"><span class="chip" data-t="${esc(e.type)}">${esc(e.type)}</span>${e.channel ? `<span class="chip">${esc(e.channel)}</span>` : ''}
-      <span class="chip ${e.done ? 'ok' : overdue(e) ? 'bad' : ''}">${e.done ? `${doneLabel(e)}${e.done_at ? ' · ' + esc(e.done_at.slice(5)) : ''}` : overdue(e) ? '지연 · 업로드 미확인' : '예정'}</span>
+    <div class="row"><span class="chip" data-t="${esc(e.type)}">${esc(typeLabel(e.type))}</span>${e.channel ? `<span class="chip">${esc(e.channel)}</span>` : ''}
+      <span class="chip ${e.done ? 'ok' : overdue(e) ? 'bad' : ''}">${e.done ? `${doneLabel(e)}${e.done_at ? ' · ' + esc(e.done_at.slice(5)) : ''}` : overdue(e) ? '딜레이 · 포스팅 미확인' : '예정'}</span>
       <span class="spacer"></span><button class="btn sm danger" data-rm="${esc(e.id)}">삭제</button></div>${e.note ? `<p class="muted">${esc(e.note)}</p>` : ''}</div>`;
 }
 const calToggle = () => `<div class="seg" role="group" aria-label="보기"><button class="seg-b" data-mode="cal" aria-pressed="${S.calMode !== 'list'}">캘린더</button><button class="seg-b" data-mode="list" aria-pressed="${S.calMode === 'list'}">리스트 (포스팅 관리)</button></div>`;
@@ -769,21 +775,21 @@ function viewCalGrid() {
   }
   const dayEvs = (by[C.sel] || []).slice().sort(evSort);
   $('#view').innerHTML = `${calToggle()}
-    <div class="stats">${statHtml('이번 달 일정', `${month.length}개`)}${statHtml('콘텐츠 업로드', `${cont.filter(e => e.done).length}/${cont.length}`, '확인 완료/전체')}${statHtml('지연', `${S.lib.events.filter(overdue).length}개`, '업로드 미확인')}</div>
+    <div class="stats">${statHtml('이번 달 일정', `${month.length}개`)}${statHtml('콘텐츠 포스팅', `${cont.filter(e => e.done).length}/${cont.length}`, '확인 완료/전체')}${statHtml('딜레이', `${S.lib.events.filter(overdue).length}개`, '포스팅 미확인')}</div>
     <div class="cal-head"><button class="btn sm" id="cPrev" aria-label="이전 달">←</button><b>${C.y}년 ${C.m}월</b><button class="btn sm" id="cNext" aria-label="다음 달">→</button><button class="btn sm" id="cToday">오늘</button>
-      <span class="spacer"></span>${EVENT_TYPES.map(t => `<span class="chip" data-t="${t}">${t}</span>`).join('')}</div>
+      <span class="spacer"></span>${EVENT_TYPES.map(t => `<span class="chip" data-t="${t}">${typeLabel(t)}</span>`).join('')}</div>
     <div class="cal card"><div class="cal-w">${['일', '월', '화', '수', '목', '금', '토'].map(w => `<span>${w}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
     <div class="grid2" style="margin-top:18px;align-items:start">
       <div class="card pad"><div class="sec-t" style="margin:0 0 10px">${esc(C.sel)} 일정 <span class="chip">${dayEvs.length}</span></div>
         <div class="evlist">${dayEvs.length ? dayEvs.map(evRow).join('') : '<span class="muted">이 날짜에 일정이 없어요.</span>'}</div>
-        <p class="hint muted" style="font-size:12.5px;margin:12px 0 0">체크는 담당자가 직접 확인한 뒤 남기는 기록입니다. 이 화면은 게시·업로드를 실행하지 않습니다.</p></div>
+        <p class="hint muted" style="font-size:12.5px;margin:12px 0 0">체크는 담당자가 직접 확인한 뒤 남기는 기록입니다. 이 화면은 포스팅을 실행하지 않습니다.</p></div>
       <form class="card pad form" id="evform" autocomplete="off"><div class="sec-t" style="margin:0">일정 추가</div>
         <label class="field"><span class="lbl">날짜<span class="req">*</span></span><input class="in" type="date" name="date" value="${esc(C.sel)}" required></label>
-        <label class="field"><span class="lbl">제목<span class="req">*</span></span><input class="in" name="title" maxlength="80" placeholder="예: 10월 인스타 릴스 업로드" required></label>
-        <div class="grid2"><label class="field"><span class="lbl">유형</span><select class="in" name="type">${EVENT_TYPES.map(t => `<option>${t}</option>`).join('')}</select></label>
+        <label class="field"><span class="lbl">제목<span class="req">*</span></span><input class="in" name="title" maxlength="80" placeholder="예: 10월 인스타 릴스 포스팅" required></label>
+        <div class="grid2"><label class="field"><span class="lbl">유형</span><select class="in" name="type">${EVENT_TYPES.map(t => `<option value="${t}">${typeLabel(t)}</option>`).join('')}</select></label>
           <label class="field"><span class="lbl">채널</span><input class="in" name="channel" maxlength="40" placeholder="예: 인스타그램"></label></div>
         <label class="field"><span class="lbl">제작 역할 (선택)</span><select class="in" name="role"><option value="">자동(유형 기준)</option>${ROLE_CODES.map(c => `<option>${c}</option>`).join('')}</select></label>
-        <label class="field"><span class="lbl">메모 (광고주와 협의한 내용)</span><input class="in" name="note" maxlength="200"></label>
+        <label class="field"><span class="lbl">메모 (클라이언트와 협의한 내용)</span><input class="in" name="note" maxlength="200"></label>
         <button class="btn pri" type="submit">일정 추가</button></form>
     </div>`;
   bindCalToggle();
@@ -856,7 +862,7 @@ function viewPosts() {
         <span>${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener noreferrer" class="ok-t">링크 등록됨</a> <button class="lnk" data-link="${esc(e.id)}" aria-label="링크 수정">✎</button>` : `<button class="btn sm" data-link="${esc(e.id)}">링크 등록</button>`}</span>
         <button class="lnk" data-rm="${esc(e.id)}" aria-label="삭제">✕</button></div>`; }).join('')
         : '<div class="empty"><b>포스팅 일정이 없어요</b>+ 포스팅 일정으로 클라이언트와 협의한 일정을 추가하세요.</div>'}</div></div>
-    <small class="muted">링크를 등록하면 Performance 탭의 콘텐츠 성과 수집 대상에 들어갑니다. 포스팅일이 지났는데 링크도 확인 기록도 없으면 딜레이로 표시됩니다. 이 화면은 게시를 실행하지 않습니다.</small></div>`;
+    <small class="muted">링크를 등록하면 Performance 탭의 콘텐츠 성과 수집 대상에 들어갑니다. 포스팅일이 지났는데 링크도 확인 기록도 없으면 딜레이로 표시됩니다. 이 화면은 포스팅을 실행하지 않습니다.</small></div>`;
   const v = $('#view'), by = id => S.lib.events.find(e => e.id === id), go2 = fn => guard(async b => { await fn(b); viewPosts(); refreshAcct(); });
   bindCalToggle();
   v.querySelectorAll('[data-ch]').forEach(b => b.onclick = () => { F.ch = b.dataset.ch; viewPosts(); });
@@ -1078,7 +1084,7 @@ function viewAdStudio() {
         ${pool.length ? pool.map(p => `<label class="pick"><input type="checkbox" data-pick="${esc(p.id)}" ${S.pick.has(p.id) ? 'checked' : ''}><span>${esc(p.t)}</span></label>`).join('') : '<span class="muted">저장된 자료가 없어요. 레퍼런스 보드에서 먼저 추가하세요.</span>'}
         <button class="btn sm" data-golib="references">레퍼런스 보드 열기</button></div>
       <div class="card"><span class="n">2</span><b>브랜드 정보</b>
-        <span class="muted">${esc(cl?.name || S.st.active)}의 브랜드 규칙과 활성 피드백은 AI가 고객사 폴더에서 직접 읽습니다.</span>
+        <span class="muted">${esc(cl?.name || S.st.active)}의 브랜드 규칙과 활성 피드백은 AI가 어카운트 폴더에서 직접 읽습니다.</span>
         <div class="row">${kws.length ? kws.map(k => `<span class="chip ok">${esc(k.keyword)}</span>`).join('') : '<span class="muted">등록된 브랜드 키워드 없음</span>'}</div></div>
       <div class="card"><span class="n">3</span><b>제작 시작</b>
         <span class="muted">만들 종류를 고르면 해당 화면으로 이동합니다. 선택한 레퍼런스는 요약을 복사해 AI에게 보내는 답장 칸에 붙여 넣을 수 있습니다.</span>
@@ -1252,7 +1258,7 @@ function homeCalHtml() {
   const major = evs.filter(e => !e.done && e.date > wk && e.date <= isoAdd(today, 45)).sort(sort).slice(0, 8);
   const dd = e => { const n = dayDiff(e.date, today); return n < 0 ? `D+${-n}` : n === 0 ? '오늘' : `D-${n}`; };
   const row = (e, withD) => `<div class="evrow ${e.done ? 'done' : ''}"><div class="row"><span class="bdot" style="background:${brandColor(e.client)}"></span><b>${esc(e.title)}</b>${e.sample ? '<span class="tag">예시</span>' : ''}<span class="spacer"></span>${withD ? `<span class="chip ${late(e) ? 'bad' : ''}">${dd(e)}</span>` : ''}</div>
-    <div class="row"><small>${esc(e.brand)}</small><span class="chip" data-t="${esc(e.type)}">${esc(e.type)}</span>${e.channel ? `<span class="chip">${esc(e.channel)}</span>` : ''}${e.done ? '<span class="chip ok">완료</span>' : late(e) ? '<span class="chip bad">업로드 미확인</span>' : ''}
+    <div class="row"><small>${esc(e.brand)}</small><span class="chip" data-t="${esc(e.type)}">${esc(typeLabel(e.type))}</span>${e.channel ? `<span class="chip">${esc(e.channel)}</span>` : ''}${e.done ? '<span class="chip ok">완료</span>' : late(e) ? '<span class="chip bad">업로드 미확인</span>' : ''}
       <small class="muted">${esc(e.date.slice(5))}</small><span class="spacer"></span><button class="btn sm" data-open="${esc(e.client)}" data-date="${esc(e.date)}">열기</button></div></div>`;
   const list = (arr, withD, empty) => arr.length ? arr.map(e => row(e, withD)).join('') : `<span class="muted">${empty}</span>`;
   const brands = S.st.clients;
@@ -1264,10 +1270,10 @@ function homeCalHtml() {
     </div>
     <div class="grid3">
       <div class="card pad"><div class="sec-t">${esc(H.sel)} 일정 <span class="chip">${day.length}</span></div><div class="evlist">${list(day, false, '이 날짜에 일정이 없어요.')}</div></div>
-      <div class="card pad"><div class="sec-t">할 일 <span class="chip">${todo.length}</span><small>지연 + 7일 이내</small></div><div class="evlist">${list(todo, true, '이번 주 할 일이 없어요.')}</div></div>
+      <div class="card pad"><div class="sec-t">할 일 <span class="chip">${todo.length}</span><small>딜레이 + 7일 이내</small></div><div class="evlist">${list(todo, true, '이번 주 할 일이 없어요.')}</div></div>
       <div class="card pad"><div class="sec-t">주요 일정 <span class="chip">${major.length}</span><small>이후 45일</small></div><div class="evlist">${list(major, true, '예정된 일정이 없어요.')}</div></div>
     </div>
-    <p class="hint muted" style="font-size:12.5px;margin:12px 2px 0">모아 보기 전용입니다. 일정 추가·체크는 고객사를 연 뒤 그 고객사 캘린더에서 하세요. 이 화면은 게시·업로드를 실행하지 않습니다.</p></div>`;
+    <p class="hint muted" style="font-size:12.5px;margin:12px 2px 0">모아 보기 전용입니다. 일정 추가·체크는 어카운트를 연 뒤 그 어카운트 캘린더에서 하세요. 이 화면은 포스팅을 실행하지 않습니다.</p></div>`;
 }
 function bindHomeCal() {
   const H = S.hcal, v = $('#view'), redraw = () => { v.querySelector('.home-cal').outerHTML = homeCalHtml(); bindHomeCal(); };
@@ -1357,6 +1363,35 @@ async function viewAccounts() {
   const si = $('#accSearch'); si.value = F.q; si.oninput = () => { F.q = si.value; paint(); };
   $('#view').querySelectorAll('[data-st]').forEach(b => b.onclick = () => { F.st = b.dataset.st; viewAccounts(); });
 }
+/* ---------- Team: 전 어카운트의 팀원·역할 배정 (team.json) ---------- */
+async function viewTeam() {
+  await loadAccounts(); if (S.view !== 'team') return;
+  const acc = S.acc.accounts, total = acc.length * ROLE_CODES.length;
+  const filled = () => S.acc.accounts.reduce((n, a) => n + Object.keys(a.team || {}).length, 0);
+  const roleName = Object.fromEntries(ROLE_CARDS.map(r => [r.code, r]));
+  const people = () => {
+    const m = {};
+    S.acc.accounts.forEach(a => Object.entries(a.team || {}).forEach(([code, name]) => { (m[name] = m[name] || []).push({ acc: a.name, code }); }));
+    return Object.entries(m).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  };
+  const peopleHtml = () => { const pp = people(); return pp.length ? pp.map(([n, list]) => `<div class="pp"><b>${esc(n)}</b><span class="muted">${list.length}개 역할</span><div class="row">${list.map(x => `<span class="chip">${esc(x.acc)} · ${x.code}</span>`).join('')}</div></div>`).join('')
+    : '<span class="muted">아직 배정된 팀원이 없어요. 위 표에 이름을 적으면 여기에 모입니다.</span>'; };
+  $('#view').innerHTML = `<div class="accounts-page">${pageHead('Team', '어카운트마다 누가 어떤 역할을 맡는지 한 화면에서 보고 바꿉니다.', false)}
+    ${acc.length ? `<div class="row"><span class="chip ok" id="tmFilled">배정 ${filled()} / ${total}</span><span class="muted" style="font-size:12.5px">이름을 적고 Enter(또는 다른 칸 클릭)를 누르면 저장돼요. 비우면 미배정입니다.</span></div>
+    <div class="tbl"><div class="tbl-in" style="min-width:860px"><div class="tr th" style="grid-template-columns:200px repeat(6,minmax(110px,1fr))"><span>어카운트</span>${ROLE_CODES.map(c => `<span>${c}<br><small>${esc(roleName[c].ko)}</small></span>`).join('')}</div>
+      ${acc.map(a => `<div class="tr" style="grid-template-columns:200px repeat(6,minmax(110px,1fr))"><span class="row"><span class="mono sm" style="background:${monoColor(a.id)}">${esc(a.name[0])}</span><b>${esc(a.name)}</b></span>
+        ${ROLE_CODES.map(c => `<span><input class="in sm tm" data-acc="${esc(a.id)}" data-role="${c}" value="${esc((a.team || {})[c] || '')}" placeholder="미배정" maxlength="40" aria-label="${esc(a.name)} ${c} 담당자"></span>`).join('')}</div>`).join('')}</div></div>
+    <section class="card pad"><div class="sec-t" style="margin:0 0 10px">팀원별 담당</div><div class="people" id="people">${peopleHtml()}</div></section>`
+    : '<div class="card pad empty-acc"><b>아직 어카운트가 없어요</b><p>어카운트를 만들면 여기서 팀을 배정할 수 있어요.</p><button class="btn pri" data-new-acc3>+ New Account</button></div>'}</div>`;
+  bindHead();
+  const n3 = $('#view').querySelector('[data-new-acc3]'); if (n3) n3.onclick = newAccountModal;
+  $('#view').querySelectorAll('.tm').forEach(inp => inp.onchange = guard(async () => {
+    const a = S.acc.accounts.find(x => x.id === inp.dataset.acc), team = {};
+    $('#view').querySelectorAll(`.tm[data-acc="${inp.dataset.acc}"]`).forEach(i => { if (i.value.trim()) team[i.dataset.role] = i.value.trim(); });
+    a.team = (await api('/api/team-set', { client: a.id, team })).team;
+    $('#tmFilled').textContent = `배정 ${filled()} / ${total}`; $('#people').innerHTML = peopleHtml(); toast('저장했어요.', 'ok');
+  }));
+}
 async function viewCalendarHome() {
   await loadAccounts(); if (S.view !== 'calendar') return;
   $('#view').innerHTML = `<div class="accounts-page">${pageHead('Calendar', '모든 어카운트의 일정을 한곳에서 확인합니다.', false)}${S.st.clients.length ? homeCalHtml() : '<div class="card pad"><div class="empty"><b>등록된 어카운트가 없어요</b>All Accounts에서 + New Account 로 등록하세요.</div></div>'}</div>`;
@@ -1417,13 +1452,13 @@ function fieldsHtml(cmd) {
     }
     case 'shoot-plan': {
       const p = S.ws.projects.find(x => x.id === (f.project || S.ws.projects[0]?.id));
-      return `${proj(true, '')}${p && !p.selected ? '<div class="note">이 프로젝트는 아직 컨셉이 선택되지 않았습니다. 선택 전에는 촬영 계획을 만들 수 없어 AI가 멈춥니다. 먼저 [영상 기획]에서 선택하세요.</div>' : ''}`;
+      return `${proj(true, '')}${p && !p.selected ? '<div class="note">이 프로젝트는 아직 컨셉이 선택되지 않았습니다. 선택 전에는 슈팅 계획을 만들 수 없어 AI가 멈춥니다. 먼저 [영상 기획]에서 선택하세요.</div>' : ''}`;
     }
     case 'onset':
       return `${proj(true, '')}
         <div class="field"><span class="lbl">지금 상황<span class="req">*</span></span>
           <textarea class="in" name="situation" rows="3" maxlength="500" placeholder="예: 야외 장소에 비가 내림, 출연자 도착이 40분 늦어짐">${esc(f.situation || '')}</textarea>
-          <div class="row">${['야외 장소에 비가 내림', '출연자 도착이 지연됨', '촬영 장소 이용이 제한됨', '장비가 고장 남'].map(t => `<button type="button" class="chip" data-quick="${esc(t)}" style="border:0;cursor:pointer">${esc(t)}</button>`).join('')}</div></div>`;
+          <div class="row">${['야외 장소에 비가 내림', '출연자 도착이 딜레이됨', '슈팅 장소 이용이 제한됨', '장비가 고장 남'].map(t => `<button type="button" class="chip" data-quick="${esc(t)}" style="border:0;cursor:pointer">${esc(t)}</button>`).join('')}</div></div>`;
   }
   return '';
 }
@@ -1458,7 +1493,7 @@ function viewCommand(cmd) {
     ${['copy', 'video', 'shoot-plan'].includes(cmd) ? refPanel() : ''}
     <form class="card pad form" id="form" autocomplete="off">${body}
       <div class="form-foot"><button class="btn pri" id="go" type="submit" ${S.st.claude ? '' : 'disabled'}>${S.run?.running && show ? '<span class="spin"></span> 작업 중' : '실행'}</button>
-        <span class="muted" style="font-size:13px">초안만 만들며 외부로 발송·게시하지 않습니다.</span></div>
+        <span class="muted" style="font-size:13px">초안만 만들며 외부로 발송·포스팅하지 않습니다.</span></div>
       <div class="cmdline" id="cmdline"></div></form>
     <section class="stream" id="stream"></section>
     <div id="composerWrap"></div>`;
@@ -1610,7 +1645,7 @@ function viewResults() {
   const R = S.res; const ps = S.ws.projects.slice();
   if (!ps.find(p => p.id === 'general')) ps.push({ id: 'general', name: '공통 업무' });
   $('#view').innerHTML = `
-    <div class="hero"><span class="ic">${ICONS.folder}</span><div><h1>결과물</h1><p>AI가 만든 초안을 확인하고 승인합니다. 모든 파일은 새 버전(-v숫자)으로 쌓이고 기존 파일은 덮어쓰지 않습니다.</p></div></div>
+    <div class="hero"><span class="ic">${ICONS.folder}</span><div><h1>결과물</h1><p>AI가 만든 초안을 확인하고 컨펌합니다. 모든 파일은 새 버전(-v숫자)으로 쌓이고 기존 파일은 덮어쓰지 않습니다.</p></div></div>
     <div class="row" style="margin-bottom:14px"><label class="lbl" for="rp" style="font-weight:600">프로젝트</label>
       <select class="in" id="rp" style="max-width:360px">${ps.map(p => `<option value="${esc(p.id)}" ${R.project === p.id ? 'selected' : ''}>${esc(p.name)} · ${esc(p.id)}</option>`).join('')}</select></div>
     <div class="split"><div class="card flist">${R.items.length ? R.items.map((it, i) =>
@@ -1624,24 +1659,24 @@ function viewResults() {
   const it = R.sel; const can = it.state === 'review_passed';
   v.innerHTML = `<div class="viewer-h"><b>${esc(it.name)}</b>${stateChip(it.state)}<span class="spacer"></span>
       <button class="btn sm" id="cp">복사</button>
-      ${it.state ? `<button class="btn sm pri" id="ap" ${can ? '' : 'disabled'} title="${can ? '' : 'AI 검수를 통과한 산출물만 승인할 수 있습니다'}">승인</button>` : ''}</div>
-    ${it.state === 'approved' ? `<div class="viewer-b" style="padding-bottom:0"><div class="note info">${esc(it.by || '')} 님이 승인했습니다.</div></div>` : ''}
+      ${it.state ? `<button class="btn sm pri" id="ap" ${can ? '' : 'disabled'} title="${can ? '' : 'AI 검수를 통과한 산출물만 컨펌할 수 있습니다'}">컨펌</button>` : ''}</div>
+    ${it.state === 'approved' ? `<div class="viewer-b" style="padding-bottom:0"><div class="note info">${esc(it.by || '')} 님이 컨펌했습니다.</div></div>` : ''}
     <div class="viewer-b">${renderFile(it.name, R.text)}</div>`;
   $('#cp').onclick = () => navigator.clipboard.writeText(R.text).then(() => toast('복사했습니다.', 'ok'), () => toast('복사하지 못했습니다.', 'bad'));
   const ap = $('#ap'); if (ap) ap.onclick = () => approveModal(it);
 }
 function approveModal(it) {
-  modal(`<h3>이 산출물을 승인하시겠어요?</h3>
-    <p class="muted"><b>${esc(it.name)}</b><br>AI 검수 통과는 승인도, 법적 적합성 확정도 아닙니다. 내용을 직접 확인한 대표가 승인합니다.</p>
-    ${repField('승인자 (대표)')}
-    <div class="row end"><button class="btn" id="m-no">취소</button><button class="btn pri" id="m-ok">승인</button></div>`,
+  modal(`<h3>이 산출물을 컨펌하시겠어요?</h3>
+    <p class="muted"><b>${esc(it.name)}</b><br>AI 검수 통과는 컨펌도, 법적 적합성 확정도 아닙니다. 내용을 직접 확인한 대표가 컨펌합니다.</p>
+    ${repField('컨펌자 (대표)')}
+    <div class="row end"><button class="btn" id="m-no">취소</button><button class="btn pri" id="m-ok">컨펌</button></div>`,
   m => {
     $('#m-no', m).onclick = closeModal; bindRep(m);
     $('#m-ok', m).onclick = guard(async () => {
       const by = $('#by', m).value.trim(); if (!by) return toast('대표 이름을 입력하세요.', 'bad');
       await saveRep(by);
       await api('/api/approve', { project: S.res.project, file: it.name, by });
-      closeModal(); toast('승인했습니다.', 'ok'); await loadResults(); await openFile(S.res.items.find(i => i.name === it.name) || it, true); viewResults();
+      closeModal(); toast('컨펌했습니다.', 'ok'); await loadResults(); await openFile(S.res.items.find(i => i.name === it.name) || it, true); viewResults();
     });
   });
 }
@@ -1650,16 +1685,16 @@ function approveModal(it) {
 function viewFeedback() {
   const items = S.fb; const today = S.st.today;
   const live = i => i.status === '승인' && (!i.expires || i.expires >= today);
-  const groups = [['승인 대기 (후보)', items.filter(i => i.status === '후보')],
+  const groups = [['컨펌 대기 (후보)', items.filter(i => i.status === '후보')],
     ['활성 규칙', items.filter(live)], ['지난 기록', items.filter(i => i.status !== '후보' && !live(i))]];
   const card = i => `<div class="card fb"><div class="fb-h"><b>${esc(i.id)}</b>
-      <span class="chip ${i.status === '승인' ? 'ok' : i.status === '후보' ? 'warn' : ''}">${esc(i.status)}</span>
+      <span class="chip ${i.status === '승인' ? 'ok' : i.status === '후보' ? 'warn' : ''}">${esc(i.status === '승인' ? '컨펌' : i.status)}</span>
       <span class="chip">${esc(i.scope)}${i.scope_ref ? ':' + esc(i.scope_ref) : ''}</span><span class="chip">${esc(i.kind)}</span><span class="spacer"></span>
-      ${i.status === '후보' ? `<button class="btn sm pri" data-ap="${esc(i.id)}">승인</button><button class="btn sm danger" data-rj="${esc(i.id)}">폐기</button>` : ''}</div>
+      ${i.status === '후보' ? `<button class="btn sm pri" data-ap="${esc(i.id)}">컨펌</button><button class="btn sm danger" data-rj="${esc(i.id)}">폐기</button>` : ''}</div>
     <p>${esc(i.text)}</p>
-    <small>출처: ${esc(i.source)} · ${esc(i.date)}${i.approved_by ? ` · 승인자 ${esc(i.approved_by)}` : ''}${i.expires ? ` · ~${esc(i.expires)}` : ''}</small></div>`;
+    <small>출처: ${esc(i.source)} · ${esc(i.date)}${i.approved_by ? ` · 컨펌자 ${esc(i.approved_by)}` : ''}${i.expires ? ` · ~${esc(i.expires)}` : ''}</small></div>`;
   $('#view').innerHTML = `
-    <div class="hero"><span class="ic">${ICONS.rule}</span><div><h1>피드백 규칙</h1><p>모델이 재학습되는 것이 아니라, 사람이 승인한 규칙만 이후 작업에 적용됩니다. 후보는 승인 전까지 어떤 작업에도 쓰이지 않습니다.</p></div></div>
+    <div class="hero"><span class="ic">${ICONS.rule}</span><div><h1>피드백 규칙</h1><p>모델이 재학습되는 것이 아니라, 대표가 컨펌한 규칙만 이후 작업에 적용됩니다. 후보는 컨펌 전까지 어떤 작업에도 쓰이지 않습니다.</p></div></div>
     ${items.length ? groups.filter(g => g[1].length).map(([t, l]) => `<div class="sec-t" style="margin:22px 0 10px">${t} <span class="chip">${l.length}</span></div><div class="fb-list">${l.map(card).join('')}</div>`).join('')
       : '<div class="card empty"><b>아직 피드백이 없어요</b>[회의록 정리]를 실행하면 피드백 후보가 여기에 쌓입니다.</div>'}`;
   $('#view').querySelectorAll('[data-ap]').forEach(b => b.onclick = () => fbApproveModal(b.dataset.ap));
@@ -1669,12 +1704,12 @@ function viewFeedback() {
 }
 function fbApproveModal(id) {
   const it = S.fb.find(x => x.id === id);
-  modal(`<h3>${esc(id)} 를 활성 규칙으로 승인할까요?</h3>
+  modal(`<h3>${esc(id)} 를 활성 규칙으로 컨펌할까요?</h3>
     <p class="muted">"${esc(it.text)}"<br>적용 범위: <b>${esc(it.scope)}${it.scope_ref ? ':' + esc(it.scope_ref) : ''}</b> — 범위가 넓어지지 않습니다.</p>
-    ${repField('승인자 (대표)')}
+    ${repField('컨펌자 (대표)')}
     <div class="field" style="margin-top:12px"><label class="lbl" for="ex">유효기간 (선택)</label><input class="in" id="ex" type="date"></div>
-    <div class="field" style="margin-top:12px"><label class="lbl" for="sp">대체할 기존 규칙 ID (충돌 시)</label><input class="in" id="sp" placeholder="예: FB-001, FB-002"><span class="hint">같은 주제의 활성 규칙과 충돌하면 승인되지 않습니다. 대체하려면 ID 를 적어 주세요.</span></div>
-    <div class="row end"><button class="btn" id="m-no">취소</button><button class="btn pri" id="m-ok">승인</button></div>`,
+    <div class="field" style="margin-top:12px"><label class="lbl" for="sp">대체할 기존 규칙 ID (충돌 시)</label><input class="in" id="sp" placeholder="예: FB-001, FB-002"><span class="hint">같은 주제의 활성 규칙과 충돌하면 컨펌되지 않습니다. 대체하려면 ID 를 적어 주세요.</span></div>
+    <div class="row end"><button class="btn" id="m-no">취소</button><button class="btn pri" id="m-ok">컨펌</button></div>`,
   m => {
     $('#m-no', m).onclick = closeModal; bindRep(m);
     $('#m-ok', m).onclick = guard(async () => {
@@ -1682,7 +1717,7 @@ function fbApproveModal(id) {
       await saveRep(by);
       const supersede = $('#sp', m).value.split(/[,\s]+/).filter(Boolean);
       await api('/api/feedback/approve', { id, by, expires: $('#ex', m).value, supersede });
-      closeModal(); toast('활성 규칙으로 승인했습니다.', 'ok'); await refresh(); viewFeedback(); renderSide();
+      closeModal(); toast('활성 규칙으로 컨펌했습니다.', 'ok'); await refresh(); viewFeedback(); renderSide();
     });
   });
 }
