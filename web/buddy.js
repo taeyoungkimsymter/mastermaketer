@@ -1,4 +1,4 @@
-/* 버디 페이지. /api/buddy 를 30초마다 읽어 어카운트별 캐릭터와 말풍선을 그린다. 계산은 서버가 한다(버디가 따로 계산하지 않음).
+/* 버디 페이지. /api/buddy 를 30초마다 읽어 캐릭터가 있는 어카운트의 말풍선을 그린다. 계산은 서버가 한다(버디가 따로 계산하지 않음).
    캐릭터를 누르면 역할별 현황 패널, 이따가는 서버에 저장(10분), 방해 금지 시간에는 모두 잠들고 긴급만 작은 배지로 남는다. */
 (function () {
   'use strict';
@@ -34,7 +34,9 @@
     last = data; offlineNow = !!offline;
     curSize = PX[data.size] ? data.size : curSize; document.body.dataset.size = curSize;
     var html = '';
-    data.accounts.forEach(function (acc) {
+    // 캐릭터가 있는 어카운트만 보인다. 바탕화면 창은 '바탕화면에 표시'가 켜진 것만, 브라우저 미리보기는 캐릭터가 있는 것 모두.
+    var list = data.accounts.filter(function (a) { return a.char && (!api() || a.desktop); });
+    list.forEach(function (acc) {
       var ch = charOf(acc.char), top = acc.alerts[0], bubble = '';
       var state = offline || data.quiet ? 'sleep' : top ? (top.level === 'urgent' ? 'urgent' : 'alert') : 'work';
       if (offline) bubble = '<div class="idle-b pxo"><span>서버가 꺼져 있어요</span></div>';
@@ -49,18 +51,12 @@
       html += '<section class="unit" aria-label="' + esc(acc.name) + ' 버디">' + (openAcc === acc.id ? panel(acc, ch) : '') + bubble +
         '<button class="sprite" data-panel="' + esc(acc.id) + '" aria-label="' + esc(acc.name) + ' 팀 현황 ' + (openAcc === acc.id ? '닫기' : '열기') + '">' + B.render(acc.char, state, { size: spx() }) + '</button><span class="who">' + esc(acc.name) + '</span></section>';
     });
-    if (!data.accounts.length) {          // 어카운트가 하나도 없으면 모모가 첫 어카운트를 안내한다
-      var gk = KIND.confirm, gch = charOf('momo');
-      html = offline ? '<section class="unit"><div class="idle-b pxo"><span>서버가 꺼져 있어요</span></div><div class="sprite">' + B.render('momo', 'sleep', { size: spx() }) + '</div></section>'
-        : (data.guide_snoozed || data.quiet)
-          ? '<section class="unit"><div class="idle-b pxo"><span>' + (data.quiet ? '쉬는 중 · zZ' : '열일 중 · · ·') + '</span></div><div class="sprite">' + B.render('momo', data.quiet ? 'sleep' : 'work', { size: spx() }) + '</div></section>'
-          : '<section class="unit"><div class="bubble pop" style="--bg:' + gk.bg + '"><div class="out pxr"><div class="in pxr" style="background:' + gk.bg + '"><div class="hd">' + icon('confirm') + '<span style="color:' + gk.color + '">' + esc(gch.name) + ' · 시작하기</span></div>' +
-            '<div class="msg">대표님~! 첫 어카운트를 만들어 주세요 ♡</div><div class="btns"><button class="pxo" style="background:' + gk.btn + '" data-new="1">만들러 갈게요</button><button class="pxo later" data-later="|guide:first">이따가</button></div></div></div><div class="tail"><i></i><i></i><i></i><i></i></div></div>' +
-            '<div class="sprite">' + B.render('momo', 'alert', { size: spx() }) + '</div></section>';
+    if (!list.length) {
+      if (api()) { api().quit(); return; }           // 바탕화면 창: 띄울 캐릭터가 하나도 없으면 스스로 닫는다
+      html = '<section class="unit"><div class="idle-b pxo"><span>미리볼 캐릭터가 없어요 · 캐릭터 설정에서 붙여 주세요</span></div></section>';
     }
     stage.innerHTML = html;
     stage.querySelectorAll('[data-go]').forEach(function (b) { b.onclick = function () { var p = b.dataset.go.split('|'); openApp('acc=' + encodeURIComponent(p[0]) + '&tab=' + encodeURIComponent(p[1]) + (p[2] ? '&sub=' + encodeURIComponent(p[2]) : '')); }; });
-    stage.querySelectorAll('[data-new]').forEach(function (b) { b.onclick = function () { openApp('new=1'); }; });
     stage.querySelectorAll('[data-ov]').forEach(function (b) { b.onclick = function () { openApp('acc=' + encodeURIComponent(b.dataset.ov) + '&tab=overview'); }; });
     stage.querySelectorAll('[data-panel]').forEach(function (b) { b.onclick = function () { openAcc = openAcc === b.dataset.panel ? '' : b.dataset.panel; render(last, offlineNow); }; });
     stage.querySelectorAll('[data-close]').forEach(function (b) { b.onclick = function () { openAcc = ''; render(last, offlineNow); }; });
@@ -91,7 +87,7 @@
     }, 60);
   }
   if (window.ResizeObserver) new ResizeObserver(report).observe(stage);
-  function stamp(d) { return JSON.stringify([d.accounts, d.size, d.quiet, d.guide_snoozed]); }   // now 처럼 매번 바뀌는 값은 빼서, 바뀐 게 없으면 다시 그리지 않는다
+  function stamp(d) { return JSON.stringify([d.accounts, d.size, d.quiet]); }   // now 처럼 매번 바뀌는 값은 빼서, 바뀐 게 없으면 다시 그리지 않는다
   function load(force) {
     fetch('/api/buddy', { headers: { 'X-Token': TOKEN } }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (d) {
       if (force || !last || offlineNow || stamp(d) !== stamp(last)) render(d, false);
@@ -103,7 +99,7 @@
     var bn = document.createElement('div'); bn.className = 'banner-pv';
     bn.innerHTML = '<span>바탕화면에 띄우려면 \'버디 띄우기\'를 눌러 주세요</span><button type="button">버디 띄우기</button>';
     bn.querySelector('button').onclick = function () {
-      post('/api/buddy-launch', {}).then(function (d) { bn.querySelector('span').textContent = d.error ? d.error : d.started ? '바탕화면에 띄웠어요. 이 미리보기는 닫아도 돼요.' : '이미 실행 중이에요.'; })
+      post('/api/buddy-launch', {}).then(function (d) { bn.querySelector('span').textContent = d.error ? d.error : d.none ? d.message : d.started ? '바탕화면에 띄웠어요. 이 미리보기는 닫아도 돼요.' : '이미 실행 중이에요.'; })
         .catch(function () { bn.querySelector('span').textContent = '서버에 연결하지 못했어요.'; });
     };
     document.body.appendChild(bn);

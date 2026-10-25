@@ -572,7 +572,7 @@ def write_brief(client, fields):
     return read_brief(client)
 
 
-def new_account(account_id, name):
+def new_account(account_id, name, char=None, desktop=False):
     """새 어카운트 폴더를 만든다(scaffold). 이미 열린 어카운트가 없을 때만 바로 세션에 연다."""
     account_id = clean_text(account_id, 32).lower()
     common.validate_id(account_id, "client_id")
@@ -581,7 +581,12 @@ def new_account(account_id, name):
         raise AgencyError("표시명을 입력하세요.")
     if (common.clients_root() / account_id).exists():
         raise AgencyError("이미 있는 어카운트 ID입니다. 다른 ID를 쓰세요.")
+    char = clean_text(char, 10) or None
+    if char is not None and char not in BUDDY_CHARS:
+        raise AgencyError("알 수 없는 캐릭터입니다.")
     scaffold.make_client(account_id, name)
+    if char is not None:   # "나중에"를 고르면 buddy.json 을 만들지 않는다(캐릭터 없음 · 바탕화면 꺼짐)
+        write_buddy(account_id, char, desktop)
     opened = False
     if not common.get_active():
         common.set_active(account_id)
@@ -592,25 +597,31 @@ def new_account(account_id, name):
 BUDDY_CHARS = ("leo", "luna", "momo", "doyun", "haru", "jun")
 
 
-def read_buddy(client, index=0):
-    """clients/{id}/buddy.json -> {"char": "momo"}. 지정이 없으면 어카운트 순서대로 기본 캐릭터."""
+def read_buddy(client):
+    """clients/{id}/buddy.json -> {"char": "momo" 또는 null, "desktop": true/false}.
+    파일이 없으면 캐릭터 없음 + 바탕화면 꺼짐. 자동 배정은 하지 않는다. 캐릭터가 없으면 desktop 은 항상 False."""
     try:
         d = json.loads((common.client_dir(client) / "buddy.json").read_text(encoding="utf-8"))
-        if isinstance(d, dict) and d.get("char") in BUDDY_CHARS:
-            return d["char"], True
     except (OSError, ValueError):
-        pass
-    return BUDDY_CHARS[index % len(BUDDY_CHARS)], False
+        return None, False
+    if not isinstance(d, dict) or d.get("char") not in BUDDY_CHARS:
+        return None, False
+    return d["char"], bool(d.get("desktop"))
 
 
-def write_buddy(client, char):
-    if char not in BUDDY_CHARS:
+def write_buddy(client, char, desktop):
+    if char is not None and char not in BUDDY_CHARS:
         raise AgencyError("알 수 없는 캐릭터입니다.")
     f = common.client_dir(client) / "buddy.json"
     tmp = f.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"char": char}, ensure_ascii=False), encoding="utf-8")
+    tmp.write_text(json.dumps({"char": char, "desktop": bool(desktop) and char is not None}, ensure_ascii=False), encoding="utf-8")
     tmp.replace(f)
-    return char
+    return {"char": char, "desktop": bool(desktop) and char is not None}
+
+
+def desktop_accounts():
+    """바탕화면에 띄울 캐릭터가 있는 어카운트(캐릭터 있음 + desktop 켜짐)."""
+    return [c["id"] for c in list_clients() if read_buddy(c["id"])[0] and read_buddy(c["id"])[1]]
 
 
 def read_team(client):
@@ -688,8 +699,8 @@ def accounts_overview():
     today = common.today_kst()
     mon = today - datetime.timedelta(days=today.weekday())
     return {"today": today.isoformat(), "week": [mon.isoformat(), (mon + datetime.timedelta(days=6)).isoformat()],
-            "accounts": [dict(account_summary(c, today), **dict(zip(("char", "char_set"), read_buddy(c["id"], i))))
-                         for i, c in enumerate(list_clients())], "events": all_events()}
+            "accounts": [dict(account_summary(c, today), **dict(zip(("char", "desktop"), read_buddy(c["id"]))))
+                         for c in list_clients()], "events": all_events()}
 
 
 
@@ -1017,15 +1028,15 @@ def buddy_state():
     quiet = dnd_active(now)
     snz = snooze_load(now)
     accounts = []
-    for i, c in enumerate(list_clients()):
-        char, char_set = read_buddy(c["id"], i)
+    for c in list_clients():
+        char, desktop = read_buddy(c["id"])
         alerts = [a for a in buddy_alerts(c["id"], today) if f"{c['id']}|{a['id']}" not in snz]
         urgent = sum(1 for a in alerts if a["level"] == "urgent")
         state = "sleep" if quiet else "urgent" if urgent else "alert" if alerts else "work"
-        accounts.append({"id": c["id"], "name": c["name"].split(" (")[0], "char": char, "state": state, "alerts": [] if quiet else alerts,
+        accounts.append({"id": c["id"], "name": c["name"].split(" (")[0], "char": char, "desktop": desktop, "state": state, "alerts": [] if quiet else alerts,
                          "urgent": urgent, "roles": buddy_roles(c["id"], today)})
     return {"now": now.isoformat(), "today": today.isoformat(), "size": buddy_size(), "quiet": quiet,
-            "guide_snoozed": "|guide:first" in snz, "accounts": accounts}
+            "desktop_count": sum(1 for a in accounts if a["char"] and a["desktop"]), "accounts": accounts}
 
 
 SNOOZE_FILE = common.root() / ".agency-state" / "buddy-snooze.json"
@@ -1059,6 +1070,9 @@ def buddy_running():
 
 def launch_buddy():
     """바탕화면 버디 창(scripts/buddy.py)을 따로 띄운다. 이미 떠 있으면 다시 띄우지 않는다."""
+    if not desktop_accounts():
+        return {"running": False, "started": False, "none": True,
+                "message": "바탕화면에 띄울 캐릭터가 없어요. 어카운트의 캐릭터 설정에서 켜 주세요."}
     if buddy_running():
         return {"running": True, "started": False}
     log = common.root() / ".agency-state" / "buddy.log"
@@ -1228,14 +1242,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/buddy-launch" and method == "POST":
             return launch_buddy()
         if path == "/api/new-account" and method == "POST":
-            return new_account(b.get("id"), b.get("name"))
+            return new_account(b.get("id"), b.get("name"), b.get("char"), b.get("desktop"))
         if path == "/api/brief":
             c = need_active()
             if method == "POST":
                 return {"fields": write_brief(c, b.get("fields"))}
             return {"fields": read_brief(c), "labels": list(BRIEF_FIELDS)}
         if path == "/api/buddy-char" and method == "POST":
-            return {"char": write_buddy(need_active(), clean_text(b.get("char"), 10))}
+            return write_buddy(need_active(), clean_text(b.get("char"), 10) or None, b.get("desktop"))
         if path == "/api/team-set" and method == "POST":
             cid = common.validate_id(clean_text(b.get("client"), 32), "client_id")
             if cid not in {c["id"] for c in list_clients()}:

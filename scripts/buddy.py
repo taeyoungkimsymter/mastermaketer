@@ -7,11 +7,12 @@
 터미널에서는 Ctrl+C, 안 닫히면 `pkill -f scripts/buddy.py`.
 
 pywebview 는 프로젝트 안 가상환경(.venv)에 설치돼 있다. 시스템 python3 로 실행해도 .venv 가 있으면 자동으로 그쪽으로 다시 실행한다.
-서버가 꺼져 있으면 잠든 캐릭터와 "서버가 꺼져 있어요"를 띄우고, 서버가 켜지면 자동으로 /buddy 로 바뀐다.
+띄울 캐릭터(어카운트의 캐릭터 설정에서 '바탕화면에 표시'를 켠 것)가 없으면 창을 띄우지 않는다. 서버가 꺼져 있어도 띄우지 않는다.
 """
 import argparse
-import html
+import json
 import os
+import re
 import signal
 import sys
 import threading
@@ -40,13 +41,19 @@ def reexec_in_venv():
         os.execv(str(py), [str(py)] + sys.argv)
 
 
-def offline_html():
-    """서버가 꺼져 있을 때 보여 줄 화면(스프라이트 코드를 그대로 인라인)."""
-    sprite = (WEB / "buddy-sprite.js").read_text(encoding="utf-8")
-    css = (WEB / "buddy.css").read_text(encoding="utf-8")
-    return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>{css}</style></head><body>
-<main id="stage"><section class="unit"><div class="idle-b pxo"><span>서버가 꺼져 있어요</span></div><div class="sprite" id="sp"></div></section></main>
-<script>{sprite}</script><script>document.getElementById('sp').innerHTML=BuddySprite.render('momo','sleep',{{size:118}});</script></body></html>"""
+def desktop_count(base):
+    """바탕화면에 띄울 캐릭터가 있는 어카운트 수. 서버에 연결하지 못하면 None."""
+    try:
+        with urllib.request.urlopen(base + "/buddy", timeout=2) as r:
+            token = re.search(r'name="token" content="([^"]+)"', r.read().decode()).group(1)
+        req = urllib.request.Request(base + "/api/buddy", headers={"X-Token": token})
+        with urllib.request.urlopen(req, timeout=4) as r:
+            return int(json.load(r).get("desktop_count", 0))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+NO_CHAR_MSG = "바탕화면에 띄울 캐릭터가 없어요. 어카운트의 캐릭터 설정에서 켜 주세요."
 
 
 class Api:
@@ -122,6 +129,7 @@ def main():
     ap.add_argument("--bottom", type=int, default=70, help="화면 아래 여백(독 높이만큼, px)")
     ap.add_argument("--right", type=int, default=8, help="화면 오른쪽 여백(px)")
     ap.add_argument("--desktop-only", action="store_true", help="pywebview 가 없으면 브라우저로 대신하지 않고 오류로 끝낸다")
+    ap.add_argument("--check", action="store_true", help="띄울 캐릭터가 있으면 종료 코드 0, 없으면 3, 서버가 꺼져 있으면 4")
     ap.add_argument("--smoke", type=int, default=0, help="창을 띄우고 N초 뒤 스스로 닫는다(동작 확인용)")
     ap.add_argument("--dry-run", action="store_true", help="창을 띄우지 않고 상태만 출력")
     a = ap.parse_args()
@@ -129,10 +137,22 @@ def main():
     url = base + "/buddy"
     up = server_up(base)
 
+    if a.check:
+        n = desktop_count(base)
+        print("서버가 꺼져 있어요." if n is None else f"바탕화면에 띄울 어카운트 {n}개" if n else NO_CHAR_MSG)
+        sys.exit(4 if n is None else 0 if n else 3)
     if a.dry_run:
         print(f"서버: {'켜짐' if up else '꺼짐'} ({base})")
         print("창 크기는 캐릭터·말풍선에 맞춰 페이지가 정합니다.")
         return
+    n = desktop_count(base) if not (a.browser or a.dry_run) else None
+    if not (a.browser or a.dry_run):
+        if n is None:
+            print("서버가 꺼져 있어요. 먼저 python3 scripts/webapp.py 를 실행하세요.", file=sys.stderr)
+            sys.exit(4)
+        if n == 0:
+            print(NO_CHAR_MSG)
+            sys.exit(3)
     if a.browser:
         print("브라우저 창으로 엽니다:", url)
         if not up:
@@ -162,8 +182,7 @@ def main():
     sw, sh = screen()
     w, h = 240, 240   # 처음 크기. 페이지가 내용에 맞게 바로 줄여 준다
     kw = dict(width=w, height=h, x=sw - w - a.right, y=sh - h - a.bottom, frameless=True, transparent=True, on_top=True, easy_drag=False, resizable=False, js_api=api)
-    html_arg = {} if up else {"html": offline_html()}
-    target = url if up else None
+    html_arg, target = {}, url
     while True:  # 일부 pywebview 버전에 없는 옵션은 빼고 다시 시도
         try:
             win = webview.create_window("마스터마케터 버디", target, **html_arg, **kw)
@@ -175,19 +194,10 @@ def main():
             kw.pop(bad)
     api._window = win
 
-    def watch():  # 서버가 나중에 켜지면 /buddy 로 바꾼다
-        while not up and not server_up(base):
-            time.sleep(3)
-        if not up:
-            win.load_url(url)
-
     def stop_later():
         time.sleep(a.smoke)
         win.destroy()
 
-    if not up:
-        threading.Thread(target=watch, daemon=True).start()
-        print("서버가 꺼져 있어요. 잠든 캐릭터를 띄웠고, python3 scripts/webapp.py 를 켜면 자동으로 바뀝니다.")
     if a.smoke:
         threading.Thread(target=stop_later, daemon=True).start()
     start_click_through(api)

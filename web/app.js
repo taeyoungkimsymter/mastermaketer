@@ -290,8 +290,7 @@ function renderSide() {
   $('#rail').querySelector('[data-theme-toggle]').onclick = toggleTheme;
   $('#rail').querySelector('[data-settings]').onclick = settingsModal;
   $('#rail').querySelector('[data-buddy]').onclick = guard(async () => {
-    const r = await api('/api/buddy-launch', {});
-    toast(r.started ? '바탕화면에 버디를 띄웠어요.' : '이미 실행 중이에요.', r.started ? 'ok' : '');
+    await launchBuddyToast();
   });
 
   /* 두 번째 칸: 어카운트 화면에서만 보인다. 맨 위 어카운트 전환 드롭다운, 아래로 역할 탭. */
@@ -342,7 +341,7 @@ function renderAcctHead() {
     <div class="ah-r"><button class="btn pri" data-pend>컨펌 대기 ${pend}</button>
       <button class="btn" data-theme-toggle2>${document.documentElement.dataset.theme === 'dark' ? '라이트 모드' : '다크 모드'}</button>
       <div class="more"><button class="btn icon" data-more aria-haspopup="menu" aria-expanded="false" aria-label="더보기 (피드백 규칙·결과물)">⋯</button>
-        <div class="menu" role="menu" hidden><button role="menuitem" data-act="team">담당자 배정</button><button role="menuitem" data-act="buddy">캐릭터 지정</button><button role="menuitem" data-act="settings">설정 · 대표 이름</button><hr>${MORE.map(m => `<button role="menuitem" data-m="${m[2]}">${esc(m[1])}${m[0] === 'feedback' && cand ? `<span class="cnt">${cand}</span>` : ''}</button>`).join('')}</div></div></div></header>
+        <div class="menu" role="menu" hidden><button role="menuitem" data-act="team">담당자 배정</button><button role="menuitem" data-act="buddy">캐릭터 설정</button><button role="menuitem" data-act="settings">설정 · 대표 이름</button><hr>${MORE.map(m => `<button role="menuitem" data-m="${m[2]}">${esc(m[1])}${m[0] === 'feedback' && cand ? `<span class="cnt">${cand}</span>` : ''}</button>`).join('')}</div></div></div></header>
     ${desc ? `<div class="th"><span class="muted">${esc(desc)}</span></div>` : ''}
     ${tab && tab.subs.length ? `<div class="chips">${tab.subs.map(([k, l]) => { const n = chipCount(k); return `<button class="fchip" data-c="${k}" aria-pressed="${k === S.sub}">${esc(l)}${n === '' ? '' : ` <span class="n">${n}</span>`}</button>`; }).join('')}</div>` : ''}
     ${tab && tab.code ? myTasksHtml(tab.code) : ''}`;
@@ -448,27 +447,54 @@ const statHtml = (l, v, hint) => `<div class="stat card"><small>${esc(l)}</small
 /* ---------- 새 어카운트 · 브리프 · 처음 시작하기 ---------- */
 function newAccountModal() {
   const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32);
-  modal(`<h3>새 어카운트</h3><p class="muted">이름과 ID만 정하면 폴더가 만들어집니다. 브랜드 정보는 Overview의 "처음 시작하기"에서 채워요.</p>
-    <form id="naf" class="form" autocomplete="off">
-      <label class="field"><span class="lbl">표시명<span class="req">*</span></span><input class="in" name="name" maxlength="40" placeholder="예: 모카나루" required></label>
-      <label class="field"><span class="lbl">어카운트 ID<span class="req">*</span></span><input class="in" name="id" maxlength="32" pattern="[a-z0-9][a-z0-9\-]{1,31}" placeholder="예: mocanaru" required><span class="hint">영문 소문자·숫자·하이픈 2~32자. 폴더 이름이라 나중에 바꾸기 어려워요.</span></label>
-      <div class="row end"><button class="btn" type="button" id="m-no">취소</button><button class="btn pri" type="submit">만들기</button></div></form>
-    <p class="muted" style="margin:12px 0 0;font-size:12.5px">AI 인터뷰로 브랜드 정보까지 한 번에 채우고 싶다면 <button type="button" class="lnk acc" id="toInterview" style="padding:0;height:auto">AI 인터뷰로 등록하기</button></p>`,
-  m => {
-    const f = $('#naf', m); let touched = false;
-    f.elements.id.oninput = () => { touched = true; };
-    f.elements.name.oninput = e => { if (!touched) f.elements.id.value = slug(e.target.value); };
-    $('#m-no', m).onclick = closeModal;
-    $('#toInterview', m).onclick = () => { closeModal(); go('new-client'); };
-    f.onsubmit = guard(async e => {
-      e.preventDefault();
-      const r = await api('/api/new-account', { id: f.elements.id.value.trim(), name: f.elements.name.value.trim() });
+  const W = { step: 'info', name: '', id: '', idTouched: false, char: null, desktop: false };
+  modal(`<div id="naBody"></div>`, m => {
+    const body = () => $('#naBody', m);
+    const create = guard(async () => {
+      const r = await api('/api/new-account', { id: W.id, name: W.name, char: W.char || '', desktop: W.desktop });
       closeModal(); await refresh();
       if (r.opened) { toast('어카운트를 만들고 열었어요.', 'ok'); await goSub('overview'); }
       else { toast('어카운트를 만들었어요. 왼쪽에서 전환하면 시작할 수 있어요.', 'ok'); go('welcome'); }
+      if (W.char && W.desktop) await launchBuddyToast();
     });
+    const draw = () => {
+      const el = body();
+      if (W.step === 'info') {
+        el.innerHTML = `<h3>새 어카운트</h3><p class="muted">이름과 ID만 정하면 폴더가 만들어집니다. 브랜드 정보는 Overview의 "처음 시작하기"에서 채워요.</p>
+          <form id="naf" class="form" autocomplete="off">
+            <label class="field"><span class="lbl">표시명<span class="req">*</span></span><input class="in" name="name" maxlength="40" placeholder="예: 모카나루" value="${esc(W.name)}" required></label>
+            <label class="field"><span class="lbl">어카운트 ID<span class="req">*</span></span><input class="in" name="id" maxlength="32" pattern="[a-z0-9][a-z0-9\-]{1,31}" placeholder="예: mocanaru" value="${esc(W.id)}" required><span class="hint">영문 소문자·숫자·하이픈 2~32자. 폴더 이름이라 나중에 바꾸기 어려워요.</span></label>
+            <div class="row end"><button class="btn" type="button" id="m-no">취소</button><button class="btn pri" type="submit">다음</button></div></form>
+          <p class="muted" style="margin:12px 0 0;font-size:12.5px">AI 인터뷰로 브랜드 정보까지 한 번에 채우고 싶다면 <button type="button" class="lnk acc" id="toInterview" style="padding:0;height:auto">AI 인터뷰로 등록하기</button></p>`;
+        const f = $('#naf', m);
+        f.elements.id.oninput = () => { W.idTouched = true; };
+        f.elements.name.oninput = e => { if (!W.idTouched) f.elements.id.value = slug(e.target.value); };
+        $('#m-no', m).onclick = closeModal;
+        $('#toInterview', m).onclick = () => { closeModal(); go('new-client'); };
+        f.onsubmit = e => { e.preventDefault(); W.name = f.elements.name.value.trim(); W.id = f.elements.id.value.trim(); W.step = 'ask'; draw(); };
+        setTimeout(() => f.elements.name.focus(), 0);
+      } else if (W.step === 'ask') {
+        el.innerHTML = `<h3>이 어카운트에 캐릭터를 붙일까요?</h3><p class="muted">캐릭터(버디)는 확인할 일이 생기면 말풍선으로 알려 줘요. 안 붙여도 앱 안 알림은 똑같이 보여요. 나중에 어카운트의 ⋯ 메뉴 → 캐릭터 설정에서 바꿀 수 있어요.</p>
+          <div class="row end"><button class="btn" id="back">이전</button><button class="btn" id="later">나중에</button><button class="btn pri" id="yes">예</button></div>`;
+        $('#back', m).onclick = () => { W.step = 'info'; draw(); };
+        $('#later', m).onclick = () => { W.char = null; W.desktop = false; create(); };
+        $('#yes', m).onclick = () => { W.step = 'pick'; draw(); };
+      } else if (W.step === 'pick') {
+        el.innerHTML = `<h3>캐릭터를 골라 주세요</h3><div class="bd-grid" id="bdGrid"></div><div class="bd-prev" id="bdPrev"></div>
+          <div class="row end" style="margin-top:14px"><button class="btn" id="back">이전</button><button class="btn pri" id="next" ${W.char ? '' : 'disabled'}>다음</button></div>`;
+        charPicker(m, W, false, () => { $('#next', m).disabled = !W.char; });
+        $('#back', m).onclick = () => { W.step = 'ask'; draw(); };
+        $('#next', m).onclick = () => { W.step = 'desk'; draw(); };
+      } else {
+        el.innerHTML = `<h3>바탕화면에 띄울까요?</h3><p class="muted">띄우면 화면 오른쪽 아래에 캐릭터가 앉아서 확인할 일을 말풍선으로 알려 줘요. "앱 안에서만"을 고르면 바탕화면에는 나오지 않아요.</p>
+          <div class="row end"><button class="btn" id="back">이전</button><button class="btn" id="inapp">앱 안에서만</button><button class="btn pri" id="desk">띄우기</button></div>`;
+        $('#back', m).onclick = () => { W.step = 'pick'; draw(); };
+        $('#inapp', m).onclick = () => { W.desktop = false; create(); };
+        $('#desk', m).onclick = () => { W.desktop = true; create(); };
+      }
+    };
+    draw();
   });
-  setTimeout(() => { const i = $('#naf [name=name]'); if (i) i.focus(); }, 0);
 }
 async function loadBriefState() { try { S.brief = (await api('/api/brief')).fields; } catch { S.brief = {}; } }
 const BRIEF_HINT = { 목적: '예: 가을 신제품 인지도', 타깃: '예: 20~30대 직장인', '제품·서비스': '', '핵심 메시지': '', 채널: '예: 인스타그램, 블로그', '일정(마감)': '예: 11월 30일', 예산: '모르면 비워 두세요', '필수 문구': '', '금지 표현': '', 'KPI 정의': '전환의 정의 포함' };
@@ -491,18 +517,18 @@ function checklistSteps() {
   const acc = accOf(S.st.active) || {}, a = S.st.active;
   return [
     { title: '담당자 배정', desc: 'AE · AP · CW · AD · PD · MP에 팀원 이름을 넣어요', cta: '배정하기', done: Object.keys(acc.team || {}).length > 0, act: teamModal },
-    { title: '버디 캐릭터 지정', desc: '이 어카운트를 지켜볼 캐릭터를 골라요', cta: '고르기', done: !!acc.char_set, act: buddyModal },
+    { title: '버디 캐릭터 붙이기', desc: '이 어카운트를 지켜볼 캐릭터를 골라요. 안 붙여도 앱 안 알림은 똑같이 보여요.', cta: '고르기', done: false, optional: true, hide: !!acc.char, act: buddyModal },
     { title: '브리프 작성', desc: '캠페인 목표 · 예산 · 기간을 정리해요', cta: '작성하기', done: !!(S.brief && S.brief['목적']), act: briefModal },
     { title: '첫 포스팅 일정 추가', desc: 'Account › Content Calendar에서 일정을 넣어요', cta: '일정 추가', done: S.lib.events.some(e => e.type === '콘텐츠'), act: async () => { S.calMode = 'list'; await goSub('account', 'cal'); postModal(); } },
     { title: '광고 데이터 연결', desc: '매체 CSV를 data/raw에 넣으면 Performance가 채워져요', cta: '방법 보기', done: (S.ws.inputs.raw || []).some(f => /\.(csv|xlsx|xlsm)$/i.test(f)), act: () => goSub('performance', 'media') },
-  ].map((x, i) => ({ ...x, no: i + 1, a }));
+  ].filter(x => !x.hide).map((x, i) => ({ ...x, no: i + 1, a }));
 }
 const clHidden = a => store.get('cl-hide:' + a, '') === '1';
 function checklistHtml(steps) {
-  const left = steps.filter(x => !x.done).length;
+  const left = steps.filter(x => !x.done && !x.optional).length;
   return `<section class="card firstrun"><div class="fr-h"><div><h2>처음 시작하기</h2><span class="muted">${left ? '아직 데이터가 없어요. 아래 순서대로 채우면 Overview와 팀 탭이 하나씩 살아나요.' : '모두 마쳤어요. 이제 팀 탭에서 일을 시작하세요.'}</span></div>
       ${left ? '' : '<button class="btn" id="clHide">닫기</button>'}</div>
-    ${steps.map(x => `<div class="fr-r ${x.done ? 'done' : ''}"><span class="fr-n">${x.done ? '✓' : x.no}</span><span class="fr-t"><b>${esc(x.title)}</b><small>${esc(x.desc)}</small></span>
+    ${steps.map(x => `<div class="fr-r ${x.done ? 'done' : ''}"><span class="fr-n">${x.done ? '✓' : x.no}</span><span class="fr-t"><b>${esc(x.title)}${x.optional ? ' <span class="pill-s">선택 사항</span>' : ''}</b><small>${esc(x.desc)}</small></span>
       ${x.done ? '<span class="pill-s ok">완료</span>' : `<button class="btn" data-step="${x.no - 1}">${esc(x.cta)}</button>`}</div>`).join('')}</section>`;
 }
 function bindChecklist(steps) {
@@ -640,25 +666,41 @@ function settingsModal() {
   });
   setTimeout(() => { const i = $('#rep'); if (i) i.focus(); }, 0);
 }
-/* ---------- 버디 캐릭터 지정 (docs/buddy-spec.md §3) ---------- */
-function buddyModal() {
-  const a = S.st.active, acc = accOf(a) || {}, cur = acc.char || 'momo';
-  let pick = cur;
-  const B = window.BuddySprite, nm = (S.st.clients.find(c => c.id === a) || {}).name || a;
-  const paint = m => {
-    const ch = B.CHARS.find(c => c.id === pick);
-    m.querySelector('#bdGrid').innerHTML = B.CHARS.map(c => `<button class="bd-c ${c.id === pick ? 'on' : ''}" data-ch="${c.id}" aria-pressed="${c.id === pick}"><span class="bd-p" style="background:${c.tag}">${B.render(c.id, 'idle', { portrait: true, size: 64 })}</span>
-      <b>${esc(c.name)}</b><small>${esc(c.concept)}</small></button>`).join('');
-    m.querySelector('#bdPrev').innerHTML = `<span class="bd-p big" style="background:${ch.tag}">${B.render(ch.id, 'alert', { portrait: true, size: 72 })}</span><div><b>${esc(ch.name)} · ${esc(ch.concept)}</b><p>${esc(ch.desc)}</p><div class="bd-say">${esc(ch.line)}</div></div>`;
-    m.querySelectorAll('[data-ch]').forEach(b => b.onclick = () => { pick = b.dataset.ch; paint(m); });
+/* ---------- 버디 캐릭터 설정 (docs/buddy-spec.md §3) ---------- */
+/* 캐릭터는 자동 배정하지 않는다. 어카운트마다 붙일지(char), 바탕화면에 띄울지(desktop)를 직접 고른다. */
+function charPicker(m, st, allowNone, onChange) {
+  const B = window.BuddySprite;
+  const paint = () => {
+    const ch = st.char ? B.CHARS.find(c => c.id === st.char) : null;
+    m.querySelector('#bdGrid').innerHTML = (allowNone ? `<button type="button" class="bd-c ${!st.char ? 'on' : ''}" data-ch="" aria-pressed="${!st.char}"><span class="bd-p" style="background:var(--surface-2);color:var(--muted);font-size:12px;align-items:center">없음</span><b>캐릭터 없음</b><small>붙이지 않음</small></button>` : '') +
+      B.CHARS.map(c => `<button type="button" class="bd-c ${c.id === st.char ? 'on' : ''}" data-ch="${c.id}" aria-pressed="${c.id === st.char}"><span class="bd-p" style="background:${c.tag}">${B.render(c.id, 'idle', { portrait: true, size: 64 })}</span><b>${esc(c.name)}</b><small>${esc(c.concept)}</small></button>`).join('');
+    m.querySelector('#bdPrev').innerHTML = ch ? `<span class="bd-p big" style="background:${ch.tag}">${B.render(ch.id, 'alert', { portrait: true, size: 72 })}</span><div><b>${esc(ch.name)} · ${esc(ch.concept)}</b><p>${esc(ch.desc)}</p><div class="bd-say">${esc(ch.line)}</div></div>`
+      : `<span class="muted">${allowNone ? '캐릭터 없이 앱 안에서만 알림을 봐요.' : '캐릭터를 고르면 말투를 미리 볼 수 있어요.'}</span>`;
+    m.querySelectorAll('[data-ch]').forEach(b => b.onclick = () => { st.char = b.dataset.ch || null; if (!st.char) st.desktop = false; paint(); onChange && onChange(); });
   };
-  modal(`<h3>${esc(nm)} 캐릭터 지정</h3><p class="muted">이 어카운트를 맡을 버디를 고르세요. 말투도 캐릭터를 따라갑니다.${acc.char_set ? '' : ' (지금은 기본 배정입니다.)'}</p>
+  paint();
+}
+async function launchBuddyToast() {
+  const r = await api('/api/buddy-launch', {});
+  toast(r.none ? r.message : r.started ? '바탕화면에 버디를 띄웠어요.' : '이미 실행 중이에요.', r.started ? 'ok' : '');
+}
+function buddyModal() {
+  const a = S.st.active, acc = accOf(a) || {}, nm = (S.st.clients.find(c => c.id === a) || {}).name || a;
+  const st = { char: acc.char || null, desktop: !!acc.desktop };
+  modal(`<h3>${esc(shortName({ name: nm }))} 캐릭터 설정</h3><p class="muted">이 어카운트에 버디를 붙일지, 붙인다면 누구로 할지 고르세요. 말투도 캐릭터를 따라갑니다. 앱 안 알림은 캐릭터와 상관없이 항상 보여요.</p>
     <div class="bd-grid" id="bdGrid"></div><div class="bd-prev" id="bdPrev"></div>
+    <label class="pick" style="margin-top:12px"><input type="checkbox" id="bdDesk"><span>바탕화면에 표시</span></label><small class="muted" id="bdHint"></small>
     <div class="row end" style="margin-top:14px"><button class="btn" id="m-no">취소</button><button class="btn pri" id="m-ok">저장</button></div>`,
   m => {
-    paint(m);
+    const sync = () => { const d = $('#bdDesk', m); d.disabled = !st.char; d.checked = !!st.char && st.desktop; $('#bdHint', m).textContent = st.char ? '' : '캐릭터를 붙이면 바탕화면 표시를 켤 수 있어요.'; };
+    charPicker(m, st, true, sync); sync();
+    $('#bdDesk', m).onchange = e => { st.desktop = e.target.checked; };
     $('#m-no', m).onclick = closeModal;
-    $('#m-ok', m).onclick = guard(async () => { await api('/api/buddy-char', { char: pick }); closeModal(); toast('캐릭터를 저장했습니다.', 'ok'); await loadAccounts(); renderSide(); if (S.view === 'overview') viewAcctOverview(); });
+    $('#m-ok', m).onclick = guard(async () => {
+      await api('/api/buddy-char', { char: st.char, desktop: st.desktop });
+      closeModal(); toast('캐릭터 설정을 저장했습니다.', 'ok'); await loadAccounts(); renderSide(); if (S.view === 'overview') viewAcctOverview();
+      if (st.char && st.desktop) await launchBuddyToast();
+    });
   });
 }
 function teamModal() {
