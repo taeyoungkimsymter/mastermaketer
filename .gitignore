@@ -12,3 +12,6 @@ portfolio/approved-summaries/*
 secrets/
 __pycache__/
 *.pyc
+
+# 버디 창용 가상환경(pywebview)
+.venv/

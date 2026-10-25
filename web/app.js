@@ -24,6 +24,7 @@ const ICONS = {
   back: ic('<path d="M15 6l-6 6 6 6"/>'),
   sun: ic('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>'),
   moon: ic('<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>'),
+  buddy: ic('<rect x="4" y="5" width="16" height="14" rx="4"/><path d="M9 11v1M15 11v1M10 15.5c1.2.8 2.8.8 4 0"/>'),
   sliders: ic('<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/>'),
   grid: ic('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
   ring: ic('<circle cx="12" cy="12" r="7"/>'),
@@ -239,21 +240,17 @@ function toggleTheme() {
   document.documentElement.dataset.theme = n; store.set('theme', n); renderSide();
   if (S.view === 'welcome' || S.view === 'calendar') render();
 }
-/* ---------- 역할 탭 도트 아이콘 (12×12, docs/mockups/5-side-tabs.html) ---------- */
-const pxSprite = (rows, pal) => rows.map((r, y) => [...r].map((c, x) => c === '.' ? '' : `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${pal[c]}"/>`).join('')).join('');
-const PX_O = '#2B2140';
-const PX = {
-  overview: pxSprite(['.....OO.....', '....OrrO....', '...OrrrrO...', '..OrrrrrrO..', '.OrrrrrrrrO.', 'OOOOOOOOOOOO', '.OwwwwwwwwO.', '.OwbbwwyywO.', '.OwbbwwyywO.', '.OwbbwwwwwO.', '.OwbbwwwwwO.', '.OOOOOOOOOO.'], { O: PX_O, r: '#E2574A', w: '#FFF1D6', b: '#8A5A3C', y: '#7CC8FF' }),
-  account: pxSprite(['............', '....OOOO....', '...O....O...', 'OOOOOOOOOOOO', 'ObbbbbbbbbbO', 'ObbbbbbbbbbO', 'ObbbbyybbbbO', 'OOOOOyyOOOOO', 'ObbbbbbbbbbO', 'ObbbbbbbbbbO', 'ObbbbbbbbbbO', 'OOOOOOOOOOOO'], { O: PX_O, b: '#B5764A', y: '#FFD45E' }),
-  strategy: pxSprite(['....OOOO....', '...OyyyyO...', '..OyywyyyO..', '..OywyyyyO..', '..OyyyyyyO..', '..OyyyyyyO..', '...OyyyyO...', '....OyyO....', '....OggO....', '....OggO....', '.....OO.....', '............'], { O: PX_O, y: '#FFE066', w: '#FFFFFF', g: '#9AA0B8' }),
-  copy: pxSprite(['....OOOO....', '...OppppO...', '...OppppO...', '...OOOOOO...', '...OyYyyO...', '...OyYyyO...', '...OyYyyO...', '...OyYyyO...', '...OyYyyO...', '...OttttO...', '....OttO....', '.....kk.....'], { O: PX_O, p: '#FF9BB5', y: '#FFC93C', Y: '#FFF3B0', t: '#F2C9A0', k: PX_O }),
-  art: pxSprite(['..OOOOOO....', '.OwwwwwwOO..', 'OwrrwwbbwwO.', 'OwrrwwbbwwwO', 'OwwwwwwwwwwO', 'OwggwwwOOwwO', 'OwggwwO..OwO', 'OwwwwwO..OwO', '.OwyywwOOwO.', '.OwyywwwwO..', '..OOwwwwO...', '....OOOO....'], { O: PX_O, w: '#FFF1D6', r: '#E2574A', b: '#5B9BFF', g: '#5DB86A', y: '#FFD45E' }),
-  film: pxSprite(['............', 'OOOOOOOOOOOO', 'OwkkwwkkwwkO', 'OOOOOOOOOOOO', 'OkkkkkkkkkkO', 'OkwwwwwwkkkO', 'OkkkkkkkkkkO', 'OkwwwwkkkkkO', 'OkkkkkkkkkkO', 'OkkkkkkkkkkO', 'OOOOOOOOOOOO', '............'], { O: PX_O, k: '#3A3F5C', w: '#FFFFFF' }),
-  performance: pxSprite(['............', '.........OOO', '.........OgO', '......OOOOgO', '......OyOOgO', '...OOOOyOOgO', '...ObOOyOOgO', 'OOOObOOyOOgO', 'OpOObOOyOOgO', 'OpOObOOyOOgO', 'OOOOOOOOOOOO', '............'], { O: PX_O, g: '#5DB86A', y: '#FFD45E', b: '#5B9BFF', p: '#FF9BB5' }),
+/* ---------- 역할 탭 외곽선 아이콘 (24px, 선 1.8, 색은 currentColor — docs 시안 side-tabs-v2) ---------- */
+const OUTLINE = {
+  overview: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+  account: 'M5 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18',
+  strategy: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z',
+  copy: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  art: 'M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.9-.8-1.3-.8-2.2 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-7.8-9-7.8zM7.5 11.5h.01M9.5 7.5h.01M14.5 7.5h.01',
+  film: 'M3 10h18v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10l1.2-4.2 15.6 2.1L19 10M8.5 6.4 9.8 10M13.6 7.1 14.8 10',
+  performance: 'M4 20V11M10 20V5M16 20v-6M21 20H3',
 };
-const PX_TILE = { overview: '#FFE9E4', account: '#F6E7D8', strategy: '#FFF6CC', copy: '#FFE6EE', art: '#E6F1FF', film: '#EAEAF2', performance: '#E3F4EC' };
-const pixelIcon = (id, size = 28) => `<svg width="${size}" height="${size}" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">${PX[id] || ''}</svg>`;
-const tileHtml = (id, box, ico) => `<span class="ictile" style="width:${box}px;height:${box}px;background:${PX_TILE[id]}">${pixelIcon(id, ico)}</span>`;
+const outlineIcon = (id, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${OUTLINE[id] || ''}"/></svg>`;
 /* 왕관 M 로고 (web/assets/logo.svg 와 같은 도형). 레일용은 #4B48D0 배경 */
 const logoSvg = (size, bg, stroke, gem) => `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="${bg}"/><polyline points="14,46 14,22 25,33 32,17 39,33 50,22 50,46" fill="none" stroke="#FFFFFF" stroke-width="${stroke}" stroke-linejoin="round" stroke-linecap="round"/><circle cx="32" cy="10.5" r="${gem}" fill="#FFC93C"/></svg>`;
 /* 탭 신호: 빨간 점 = 그 역할에 딜레이, 숫자 = 그 역할의 컨펌 대기 */
@@ -276,17 +273,22 @@ function renderSide() {
   const dark = document.documentElement.dataset.theme === 'dark';
   const connTxt = !S.st.claude ? 'Claude Code 를 찾을 수 없음' : run ? '작업 중' : '연결됨';
   const onAcc = S.view !== 'calendar';
-  $('#rail').innerHTML = `<span class="r-logo" role="img" aria-label="마스터마케터">${logoSvg(36, '#4B48D0', 6, 3.5)}</span>
+  $('#rail').innerHTML = `<span class="r-logo" role="img" aria-label="마스터마케터">${logoSvg(40, '#4B48D0', 6, 3.5)}</span>
     <button class="r-btn ${onAcc ? 'on' : ''}" data-home title="All Accounts" aria-label="All Accounts" ${onAcc ? 'aria-current="page"' : ''}>${ICONS.grid}</button>
     <button class="r-btn ${!onAcc ? 'on' : ''}" data-cal title="Calendar" aria-label="Calendar" ${!onAcc ? 'aria-current="page"' : ''}>${ICONS.calendar}</button>
     <span class="spacer"></span>
-    <button class="r-btn" data-settings title="설정 · 대표 이름" aria-label="설정">${ICONS.sliders}</button>
+    <button class="r-btn" data-buddy title="버디 띄우기" aria-label="버디 띄우기">${ICONS.buddy}</button>
+    <button class="r-btn" data-settings title="설정" aria-label="설정">${ICONS.sliders}</button>
     <button class="r-btn theme" data-theme-toggle title="${dark ? '라이트 모드' : '다크 모드'}" aria-label="${dark ? '라이트 모드로 전환' : '다크 모드로 전환'}">${dark ? ICONS.sun : ICONS.moon}</button>
     <span class="r-conn" title="${connTxt}"><span class="dot ${!S.st.claude ? 'bad' : run ? 'run' : 'ok'}"></span></span>`;
   $('#rail').querySelector('[data-home]').onclick = () => go('welcome');
   $('#rail').querySelector('[data-cal]').onclick = () => go('calendar');
   $('#rail').querySelector('[data-theme-toggle]').onclick = toggleTheme;
   $('#rail').querySelector('[data-settings]').onclick = settingsModal;
+  $('#rail').querySelector('[data-buddy]').onclick = guard(async () => {
+    const r = await api('/api/buddy-launch', {});
+    toast(r.started ? '바탕화면에 버디를 띄웠어요.' : '이미 실행 중이에요.', r.started ? 'ok' : '');
+  });
 
   /* 두 번째 칸: 어카운트 화면에서만 보인다. 맨 위 어카운트 전환 드롭다운, 아래로 역할 탭. */
   $('#app').classList.toggle('nopanel', home);
@@ -295,22 +297,22 @@ function renderSide() {
   const stColor = { 'On Track': 'ok', 'At Risk': 'warn', Delayed: 'late', Onboarding: 'info' };
   const meta = { overview: '대표 · 한눈에 보기' };
   ROLE_CARDS.forEach(r => { meta[r.tab] = `${r.code} · ${r.ko}`; });
-  $('#acctList').innerHTML = `<div class="sw-wrap"><button class="switcher" id="swBtn" aria-haspopup="listbox" aria-expanded="false"><span class="mono sm" style="background:${monoColor(a)}">${esc(cur ? shortName(cur)[0] : '?')}</span>
-      <span class="sw-t"><b>${esc(cur ? shortName(cur) : a)}</b><small class="${stColor[acc.status] || ''}">● ${esc(acc.status || '—')}</small></span><span aria-hidden="true" class="muted">⌄</span></button>
-    <div class="sw-menu" id="swMenu" role="listbox" hidden>${cl.map(c => { const o = accOf(c.id) || {}; return `<button role="option" class="sw-i ${c.id === a ? 'on' : ''}" aria-selected="${c.id === a}" data-open="${esc(c.id)}"><span class="mono sm" style="background:${monoColor(c.id)}">${esc(shortName(c)[0])}</span><span class="nm">${esc(shortName(c))}</span><small class="${stColor[o.status] || ''}">${esc(o.status || '')}</small></button>`; }).join('')}
+  $('#acctList').innerHTML = `<div class="sw-wrap"><button class="switcher" id="swBtn" aria-haspopup="listbox" aria-expanded="false"><span class="mono sm" style="background:#8E8BF0;color:#1B1A4B">${esc(cur ? shortName(cur)[0] : '?')}</span>
+      <span class="sw-t"><b>${esc(cur ? shortName(cur) : a)}</b><small>${esc(acc.status || '—')}</small></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B9B8E8" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="sw-menu" id="swMenu" role="listbox" hidden>${cl.map(c => { const o = accOf(c.id) || {}; return `<button role="option" class="sw-i ${c.id === a ? 'on' : ''}" aria-selected="${c.id === a}" data-open="${esc(c.id)}"><span class="mono sm" style="background:#8E8BF0;color:#1B1A4B">${esc(shortName(c)[0])}</span><span class="nm">${esc(shortName(c))}</span><small>${esc(o.status || '')}</small></button>`; }).join('')}
       <button class="sw-i add" id="swNew">+ New Account</button></div></div>
     <p class="al-lbl team">TEAM</p>
     <nav class="stabs" aria-label="어카운트 탭">${TABS.map(t => { const on = t.id === S.tab, g = sig[t.id] || {};
-      return `<button class="stab ${on ? 'on' : ''}" data-t="${t.id}" ${on ? 'aria-current="page"' : ''}>${on ? '<span class="bar-i"></span>' : ''}${tileHtml(t.id, 40, 28)}
+      return `<button class="stab ${on ? 'on' : ''}" data-t="${t.id}" ${on ? 'aria-current="page"' : ''}>${on ? '<span class="bar-i"></span>' : ''}${outlineIcon(t.id, 20)}
         <span class="st-t"><b>${t.label}</b><small>${esc(meta[t.id] || '')}</small></span>
-        ${g.late ? '<span class="bdg late" title="딜레이" role="img" aria-label="딜레이">●</span>' : ''}${g.pend ? `<span class="bdg" title="컨펌 대기 ${g.pend}건">${g.pend}</span>` : ''}</button>`; }).join('')}</nav>
-    <span class="spacer"></span><small class="muted legend-n">빨간 점은 딜레이, 보라 숫자는 컨펌 대기 건수예요.</small>`;
+        ${g.late ? '<span class="dotr" title="딜레이" role="img" aria-label="딜레이"></span>' : ''}${g.pend ? `<span class="bdg" title="컨펌 대기 ${g.pend}건">${g.pend}</span>` : ''}</button>`; }).join('')}</nav>
+    <span class="spacer"></span><small class="legend-n">빨간 점 = 딜레이 · 숫자 = 컨펌 대기<br>표시할 게 없으면 아무것도 안 붙어요.</small>`;
   const sb = $('#swBtn'), sm = $('#swMenu');
   const closeSw = () => { sm.hidden = true; sb.setAttribute('aria-expanded', 'false'); document.removeEventListener('click', outsideSw); };
   const outsideSw = e => { if (!$('#acctList .sw-wrap').contains(e.target)) closeSw(); };
   sb.onclick = e => { e.stopPropagation(); if (sm.hidden) { sm.hidden = false; sb.setAttribute('aria-expanded', 'true'); document.addEventListener('click', outsideSw); } else closeSw(); };
   $('#acctList').querySelectorAll('[data-open]').forEach(b => b.onclick = () => { closeSw(); chooseClient(b.dataset.open); });
-  $('#swNew').onclick = () => { closeSw(); go('new-client'); };
+  $('#swNew').onclick = () => { closeSw(); newAccountModal(); };
   $('#acctList').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { const t = TABS.find(x => x.id === b.dataset.t); goSub(t.id, t.subs.length ? t.subs[0][0] : ''); });
 }
 const chipCount = k => ({ cal: S.lib.events.length, req: S.lib.requests.length, issue: S.lib.issues.length }[k] ?? '');
@@ -400,7 +402,7 @@ async function go(v, tab, sub) {
   if (loc && S.st.active) [S.tab, S.sub] = loc; else S.tab = S.sub = null;
   if (S.detail) { S.detail = null; renderDetail(); }
   if (S.st.active && !['welcome', 'calendar', 'new-client'].includes(v)) await Promise.all([loadAccounts(), loadOverview()]);
-  if (v === 'overview') await loadPerfWeek();
+  if (v === 'overview') await Promise.all([loadPerfWeek(), loadBriefState()]);
   if (v === 'results') await loadResults();
   if (v === 'feedback') { try { S.fb = (await api('/api/feedback')).items; } catch (e) { toast(e.message, 'bad'); } }
   render(); window.scrollTo(0, 0);
@@ -438,6 +440,71 @@ async function loadOverview() {
 }
 const heroHtml = (icon, title, desc) => `<div class="sub-h"><h2>${esc(title)}</h2><p>${esc(desc)}</p></div>`;
 const statHtml = (l, v, hint) => `<div class="stat card"><small>${esc(l)}</small><b>${esc(v)}</b>${hint ? `<span class="muted">${esc(hint)}</span>` : ''}</div>`;
+/* ---------- 새 어카운트 · 브리프 · 처음 시작하기 ---------- */
+function newAccountModal() {
+  const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32);
+  modal(`<h3>새 어카운트</h3><p class="muted">이름과 ID만 정하면 폴더가 만들어집니다. 브랜드 정보는 Overview의 "처음 시작하기"에서 채워요.</p>
+    <form id="naf" class="form" autocomplete="off">
+      <label class="field"><span class="lbl">표시명<span class="req">*</span></span><input class="in" name="name" maxlength="40" placeholder="예: 모카나루" required></label>
+      <label class="field"><span class="lbl">어카운트 ID<span class="req">*</span></span><input class="in" name="id" maxlength="32" pattern="[a-z0-9][a-z0-9\-]{1,31}" placeholder="예: mocanaru" required><span class="hint">영문 소문자·숫자·하이픈 2~32자. 폴더 이름이라 나중에 바꾸기 어려워요.</span></label>
+      <div class="row end"><button class="btn" type="button" id="m-no">취소</button><button class="btn pri" type="submit">만들기</button></div></form>
+    <p class="muted" style="margin:12px 0 0;font-size:12.5px">AI 인터뷰로 브랜드 정보까지 한 번에 채우고 싶다면 <button type="button" class="lnk acc" id="toInterview" style="padding:0;height:auto">AI 인터뷰로 등록하기</button></p>`,
+  m => {
+    const f = $('#naf', m); let touched = false;
+    f.elements.id.oninput = () => { touched = true; };
+    f.elements.name.oninput = e => { if (!touched) f.elements.id.value = slug(e.target.value); };
+    $('#m-no', m).onclick = closeModal;
+    $('#toInterview', m).onclick = () => { closeModal(); go('new-client'); };
+    f.onsubmit = guard(async e => {
+      e.preventDefault();
+      const r = await api('/api/new-account', { id: f.elements.id.value.trim(), name: f.elements.name.value.trim() });
+      closeModal(); await refresh();
+      if (r.opened) { toast('어카운트를 만들고 열었어요.', 'ok'); await goSub('overview'); }
+      else { toast('어카운트를 만들었어요. 왼쪽에서 전환하면 시작할 수 있어요.', 'ok'); go('welcome'); }
+    });
+  });
+  setTimeout(() => { const i = $('#naf [name=name]'); if (i) i.focus(); }, 0);
+}
+async function loadBriefState() { try { S.brief = (await api('/api/brief')).fields; } catch { S.brief = {}; } }
+const BRIEF_HINT = { 목적: '예: 가을 신제품 인지도', 타깃: '예: 20~30대 직장인', '제품·서비스': '', '핵심 메시지': '', 채널: '예: 인스타그램, 블로그', '일정(마감)': '예: 11월 30일', 예산: '모르면 비워 두세요', '필수 문구': '', '금지 표현': '', 'KPI 정의': '전환의 정의 포함' };
+async function briefModal() {
+  await loadBriefState();
+  const labels = Object.keys(BRIEF_HINT);
+  modal(`<h3>브리프 작성</h3><p class="muted">캠페인 목표·예산·기간을 정리합니다. 모르는 항목은 비워 두면 "미정"으로 저장돼요. 근거 없는 수치는 적지 마세요.</p>
+    <form id="bf" class="form" autocomplete="off">${labels.map(l => `<label class="field" style="margin-top:8px"><span class="lbl">${esc(l)}</span><input class="in" name="${esc(l)}" maxlength="200" value="${esc((S.brief || {})[l] || '')}" placeholder="${esc(BRIEF_HINT[l])}"></label>`).join('')}
+      <div class="row end" style="margin-top:14px"><button class="btn" type="button" id="m-no">취소</button><button class="btn pri" type="submit">저장</button></div></form>`,
+  m => {
+    $('#m-no', m).onclick = closeModal;
+    $('#bf', m).onsubmit = guard(async e => {
+      e.preventDefault(); const fields = {}; labels.forEach(l => { fields[l] = e.target.elements[l].value.trim(); });
+      S.brief = (await api('/api/brief', { fields })).fields; closeModal(); toast('브리프를 저장했습니다.', 'ok');
+      if (S.view === 'overview') viewAcctOverview();
+    });
+  });
+}
+function checklistSteps() {
+  const acc = accOf(S.st.active) || {}, a = S.st.active;
+  return [
+    { title: '담당자 배정', desc: 'AE · AP · CW · AD · PD · MP에 팀원 이름을 넣어요', cta: '배정하기', done: Object.keys(acc.team || {}).length > 0, act: teamModal },
+    { title: '버디 캐릭터 지정', desc: '이 어카운트를 지켜볼 캐릭터를 골라요', cta: '고르기', done: !!acc.char_set, act: buddyModal },
+    { title: '브리프 작성', desc: '캠페인 목표 · 예산 · 기간을 정리해요', cta: '작성하기', done: !!(S.brief && S.brief['목적']), act: briefModal },
+    { title: '첫 포스팅 일정 추가', desc: 'Account › Content Calendar에서 일정을 넣어요', cta: '일정 추가', done: S.lib.events.some(e => e.type === '콘텐츠'), act: async () => { S.calMode = 'list'; await goSub('account', 'cal'); postModal(); } },
+    { title: '광고 데이터 연결', desc: '매체 CSV를 data/raw에 넣으면 Performance가 채워져요', cta: '방법 보기', done: (S.ws.inputs.raw || []).some(f => /\.(csv|xlsx|xlsm)$/i.test(f)), act: () => goSub('performance', 'media') },
+  ].map((x, i) => ({ ...x, no: i + 1, a }));
+}
+const clHidden = a => store.get('cl-hide:' + a, '') === '1';
+function checklistHtml(steps) {
+  const left = steps.filter(x => !x.done).length;
+  return `<section class="card firstrun"><div class="fr-h"><div><h2>처음 시작하기</h2><span class="muted">${left ? '아직 데이터가 없어요. 아래 순서대로 채우면 Overview와 팀 탭이 하나씩 살아나요.' : '모두 마쳤어요. 이제 팀 탭에서 일을 시작하세요.'}</span></div>
+      ${left ? '' : '<button class="btn" id="clHide">닫기</button>'}</div>
+    ${steps.map(x => `<div class="fr-r ${x.done ? 'done' : ''}"><span class="fr-n">${x.done ? '✓' : x.no}</span><span class="fr-t"><b>${esc(x.title)}</b><small>${esc(x.desc)}</small></span>
+      ${x.done ? '<span class="pill-s ok">완료</span>' : `<button class="btn" data-step="${x.no - 1}">${esc(x.cta)}</button>`}</div>`).join('')}</section>`;
+}
+function bindChecklist(steps) {
+  $('#view').querySelectorAll('[data-step]').forEach(b => b.onclick = guard(async () => { await steps[+b.dataset.step].act(); }));
+  const h = $('#clHide'); if (h) h.onclick = () => { store.set('cl-hide:' + S.st.active, '1'); viewAcctOverview(); };
+}
+
 /* ---------- Overview: KPI · Team Status · This Week · 컨펌 패널 (설계서 §5) ---------- */
 /* 숫자는 상태 파일·일정·자료실에서 계산한 값만 쓴다. 근거가 없으면 '—'. 담당 배정 정보가 없으므로 결과물은 파일 이름·프로젝트 단계로 역할을 나눈다. */
 const ROLE_CARDS = [
@@ -515,23 +582,29 @@ function overviewModel() {
 }
 function viewAcctOverview() {
   const M = S.model = overviewModel(), pd = M.posts.filter(e => e.done).length;
-  const kpi = (ko, v, sub, cls, bar) => `<div class="kpi k4"><span class="ko">${ko}</span><b class="${cls || ''}">${esc(v)}</b>${bar === undefined ? '' : `<div class="bar"><div style="width:${bar}%"></div></div>`}<small>${esc(sub)}</small></div>`;
+  const evs = S.lib.events, reqs = S.lib.requests, hasDeliv = S.ov.length > 0;
+  const fresh = !evs.length && !reqs.length && !S.lib.issues.length && !hasDeliv;
+  const late = M.overdue.length + M.reqOver.length, steps = checklistSteps(), showCl = steps.some(x => !x.done) || !clHidden(S.st.active);
+  const kpi = (ko, v, sub, cls, bar) => `<div class="kpi k4"><span class="ko">${ko}</span><b class="${cls || ''}${v === '—' ? ' dash' : ''}">${esc(v)}</b>${bar === undefined ? '' : `<div class="bar"><div style="width:${bar}%"></div></div>`}<small>${esc(sub)}</small></div>`;
   const brk = M.byRole.map(([c, n]) => `${c} ${n}`).concat(M.other ? [`기타 ${M.other}`] : []).join(' · ');
+  const wk = S.perfWk && S.perfWk.has_rows;
   $('#view').innerHTML = `<div class="ov">
-    <div class="kpis">${kpi('컨펌 대기', `${M.pendAll.length}건`, brk || '컨펌 대기 없음', M.pendAll.length ? 'acc' : '')}
-      ${kpi('딜레이', `${M.overdue.length + M.reqOver.length}건`, M.overdue.length + M.reqOver.length ? `클라이언트 리퀘스트 ${M.reqOver.length} · 포스팅 ${M.overdue.length}` : '딜레이 없음', M.overdue.length + M.reqOver.length ? 'late' : '')}
-      ${kpi('이번 주 포스팅', M.posts.length ? `${pd} / ${M.posts.length}` : '—', M.posts.length ? '포스팅 완료 / 예정' : '이번 주 예정 없음', '', M.posts.length ? Math.round(pd / M.posts.length * 100) : undefined)}
-      ${kpi('이번 주 집행 금액', S.perfWk && S.perfWk.has_rows ? fmtMoney(S.perfWk.totals.cost) : '—', S.perfWk && S.perfWk.has_rows ? `이번 주 ${S.perfWk.totals.days}일치 데이터` : '매체 연동 또는 CSV 필요')}</div>
-    <div class="sec-h"><h2>Team Status</h2><span class="muted">카드를 열면 해당 팀 탭으로, 컨펌 버튼을 누르면 오른쪽 패널에서 바로 컨펌합니다.</span></div>
-    <div class="rgrid">${M.cards.map(r => `<section class="rcard"><div class="rc-h">${tileHtml(r.tab, 44, 30)}
+    <div class="kpis">${kpi('컨펌 대기', hasDeliv ? `${M.pendAll.length}건` : '—', hasDeliv ? (brk || '컨펌 대기 없음') : '아직 결과물이 없어요', M.pendAll.length ? 'acc' : '')}
+      ${kpi('딜레이', evs.length || reqs.length ? `${late}건` : '—', evs.length || reqs.length ? (late ? `클라이언트 리퀘스트 ${M.reqOver.length} · 포스팅 ${M.overdue.length}` : '딜레이 없음') : '일정이 등록되면 계산돼요', late ? 'late' : '')}
+      ${kpi('이번 주 포스팅', M.posts.length ? `${pd} / ${M.posts.length}` : '—', M.posts.length ? '포스팅 완료 / 예정' : evs.length ? '이번 주 예정 없음' : '포스팅 일정을 추가해 주세요', '', M.posts.length ? Math.round(pd / M.posts.length * 100) : undefined)}
+      ${kpi('이번 주 집행 금액', wk ? fmtMoney(S.perfWk.totals.cost) : '—', wk ? `이번 주 ${S.perfWk.totals.days}일치 데이터` : '매체 연동 또는 CSV 필요')}</div>
+    ${showCl ? checklistHtml(steps) : ''}
+    ${fresh ? '' : `<div class="sec-h"><h2>Team Status</h2><span class="muted">카드를 열면 해당 팀 탭으로, 컨펌 버튼을 누르면 오른쪽 패널에서 바로 컨펌합니다.</span></div>
+    <div class="rgrid">${M.cards.map(r => `<section class="rcard"><div class="rc-h"><span class="oi">${outlineIcon(r.tab, 24)}</span>
         <div class="rc-n"><b>${r.name}</b><small>${r.code} · ${r.ko} · ${r.who ? `담당 ${esc(r.who)}` : '담당 미배정'}</small></div>
         <span class="stchip ${{ 'On Track': 'ok', 'At Risk': 'warn', Delayed: 'late' }[r.status] || ''}">${r.status}</span></div>
       <div class="a-met">${r.metrics.map(([l, v]) => `<div><small>${l}</small><b>${esc(v)}</b></div>`).join('')}</div>
       <div class="rc-x"><small>다음</small><span>${esc(r.next)}</span></div>
       <div class="rc-f">${r.pend.length ? `<button class="btn pri sm" data-drawer="${r.code}">컨펌 ${r.pend.length}건</button>` : '<small>컨펌 대기 없음</small>'}<span class="spacer"></span><button class="lnk acc" data-tab="${r.tab}">Open ›</button></div></section>`).join('')}</div>
     <section class="panel3"><div class="p3h"><h2>This Week</h2><small>${mdShort(M.week[0].d)} ~ ${mdShort(M.week[6].d)}</small></div>
-      <div class="wk-scroll"><div class="wk">${M.week.map(w => `<div class="wk-d ${w.d === M.today ? 'today' : ''}"><b>${dayLabel(w.d)}</b>${w.items.map(e => `<div class="wk-i"><span class="rcode s">${evRole(e) || '—'}</span><span>${e.done ? '✓ ' : ''}${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</span></div>`).join('')}</div>`).join('')}</div></div></section>
+      <div class="wk-scroll"><div class="wk">${M.week.map(w => `<div class="wk-d ${w.d === M.today ? 'today' : ''}"><b>${dayLabel(w.d)}</b>${w.items.map(e => `<div class="wk-i"><span class="rcode s">${evRole(e) || '—'}</span><span>${e.done ? '✓ ' : ''}${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</span></div>`).join('')}</div>`).join('')}</div></div></section>`}
   </div>`;
+  bindChecklist(steps);
   $('#view').querySelectorAll('[data-drawer]').forEach(b => b.onclick = () => openDrawer(b.dataset.drawer));
   $('#view').querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { const t = TABS.find(x => x.id === b.dataset.tab); goSub(t.id, t.subs[0][0]); });
 }
@@ -545,12 +618,16 @@ function bindRep(m) { const b = m.querySelector('[data-rep-edit]'); if (b) b.onc
 function settingsModal() {
   modal(`<h3>설정</h3>
     <div class="field"><label class="lbl" for="rep">대표 이름</label><input class="in" id="rep" value="${esc(S.st.rep)}" maxlength="40" placeholder="예: 김대표"><span class="hint">컨펌·수정 요청·피드백 규칙 승인에 자동으로 쓰입니다. 이 PC의 .agency-state/ 에만 저장됩니다.</span></div>
+    <div class="field" style="margin-top:12px"><span class="lbl">버디 크기</span><div class="seg" role="radiogroup" aria-label="버디 크기">${[['small', '작게'], ['normal', '보통'], ['large', '크게']].map(([k, l]) => `<button type="button" class="seg-b" role="radio" data-bs="${k}" aria-checked="${(S.st.buddy_size || 'small') === k}" aria-pressed="${(S.st.buddy_size || 'small') === k}">${l}</button>`).join('')}</div><span class="hint">바탕화면 버디의 크기예요. 저장하면 30초 안에 바뀌어요.</span></div>
     <div class="row end"><button class="btn" id="m-no">닫기</button><button class="btn pri" id="m-ok">저장</button></div>`,
   m => {
     $('#m-no', m).onclick = closeModal;
+    let bs = S.st.buddy_size || 'small';
+    m.querySelectorAll('[data-bs]').forEach(b => b.onclick = () => { bs = b.dataset.bs; m.querySelectorAll('[data-bs]').forEach(x => { const on = x.dataset.bs === bs; x.setAttribute('aria-pressed', on); x.setAttribute('aria-checked', on); }); });
     $('#m-ok', m).onclick = guard(async () => {
-      S.st.rep = (await api('/api/settings', { rep_name: $('#rep', m).value.trim() })).rep;
-      closeModal(); toast(S.st.rep ? '대표 이름을 저장했습니다.' : '대표 이름을 지웠습니다.', 'ok');
+      const r = await api('/api/settings', { rep_name: $('#rep', m).value.trim(), buddy_size: bs });
+      S.st.rep = r.rep; S.st.buddy_size = r.buddy_size;
+      closeModal(); toast('설정을 저장했습니다.', 'ok');
     });
   });
   setTimeout(() => { const i = $('#rep'); if (i) i.focus(); }, 0);
@@ -573,7 +650,7 @@ function buddyModal() {
   m => {
     paint(m);
     $('#m-no', m).onclick = closeModal;
-    $('#m-ok', m).onclick = guard(async () => { await api('/api/buddy-char', { char: pick }); closeModal(); toast('캐릭터를 저장했습니다.', 'ok'); await loadAccounts(); renderSide(); });
+    $('#m-ok', m).onclick = guard(async () => { await api('/api/buddy-char', { char: pick }); closeModal(); toast('캐릭터를 저장했습니다.', 'ok'); await loadAccounts(); renderSide(); if (S.view === 'overview') viewAcctOverview(); });
   });
 }
 function teamModal() {
@@ -1217,7 +1294,8 @@ const pageHead = (title, desc, search) => `<header class="ph"><div class="ph-t">
     <button class="btn pri" data-new-acc>+ New Account</button></div></header>`;
 function bindHead() {
   const v = $('#view'), t = v.querySelector('[data-theme-toggle2]'); if (t) t.onclick = toggleTheme;
-  const n = v.querySelector('[data-new-acc]'); if (n) n.onclick = () => go('new-client');
+  const n = v.querySelector('[data-new-acc]'); if (n) n.onclick = newAccountModal;
+  const n3 = v.querySelector('[data-new-acc3]'); if (n3) n3.onclick = newAccountModal;
 }
 function accountCard(a) {
   const post = a.post_total ? `${a.post_done}/${a.post_total}` : '—';
@@ -1239,21 +1317,23 @@ async function viewAccounts() {
   const cnt = st => acc.filter(a => a.status === st).length;
   const sum = k => acc.reduce((n, a) => n + a[k], 0);
   const pend = sum('pending'), over = sum('overdue'), pd = sum('post_done'), pt = sum('post_total');
-  const kpis = [
+  const E = acc.length === 0;
+  const kpis0 = [
     ['ACTIVE ACCOUNTS', '운영 어카운트', acc.length, '등록된 어카운트 기준', ''],
     ['PENDING CONFIRM', '컨펌 대기', pend, pend ? acc.filter(a => a.pending).map(a => `${a.name} ${a.pending}`).join(' · ') : '컨펌 대기 없음', 'acc'],
     ['OVERDUE', '딜레이', over, over ? `클라이언트 리퀘스트 ${sum('overdue_req')} · 포스팅 ${sum('overdue_posts')}` : '딜레이 없음', over ? 'late' : ''],
     ['POSTING', '이번 주 포스팅', pt ? `${pd} / ${pt}` : '—', pt ? '포스팅 완료 / 예정' : '이번 주 예정 없음', ''],
     ['AD SPEND', '이번 달 집행 금액', acc.some(a => a.month_cost != null) ? fmtMoney(acc.reduce((n, a) => n + (a.month_cost || 0), 0)) : '—', acc.some(a => a.month_cost != null) ? 'data/raw 파일 기준' : '매체 연동 후 표시', ''],
   ];
+  const kpis = E ? kpis0.map(k => [k[0], k[1], '—', '어카운트를 만들면 표시돼요', '']) : kpis0;
   const chips = ['All', 'On Track', 'At Risk', 'Delayed', 'Onboarding'].filter(st => st !== 'Delayed' || cnt('Delayed'))
     .map(st => `<button class="fchip" data-st="${st}" aria-pressed="${F.st === st}">${st} ${st === 'All' ? acc.length : cnt(st)}</button>`).join('');
   const week = A.events.filter(e => e.date >= w0 && e.date <= w1).sort((a, b) => a.date.localeCompare(b.date) || a.brand.localeCompare(b.brand));
   const open = A.events.filter(e => !e.done), load = ROLE_CODES.map(c => [c, open.filter(e => e.role === c).length]), mx = Math.max(1, ...load.map(l => l[1]));
   $('#view').innerHTML = `<div class="accounts-page">${pageHead('All Accounts', '운영 중인 어카운트와 팀 현황을 한눈에 봅니다.', true)}
     <div class="kpis">${kpis.map(([en, ko, v, sub, cls]) => `<div class="kpi"><span class="en">${en}</span><span class="ko">${ko}</span><b class="${cls}">${esc(v)}</b><small>${esc(sub)}</small></div>`).join('')}</div>
-    <div class="fbar"><h2>Accounts</h2>${chips}</div>
-    <div class="agrid" id="agrid"></div>
+    ${E ? `<div class="card pad empty-acc"><b>아직 어카운트가 없어요</b><p>+ New Account 로 첫 어카운트를 만들면, Overview에서 "처음 시작하기" 순서를 안내해 드려요.</p><button class="btn pri" data-new-acc3>+ New Account</button></div>`
+      : `<div class="fbar"><h2>Accounts</h2>${chips}</div><div class="agrid" id="agrid"></div>`}
     <div class="two">
       <section class="panel3 wide"><div class="p3h"><h2>This Week</h2><small>${esc(w0.slice(5).replace('-', '.'))} – ${esc(w1.slice(5).replace('-', '.'))} · 전 어카운트 일정</small></div>
         ${week.length ? week.map(e => `<div class="agrow"><span class="muted">${esc(dayLabel(e.date))}</span><span class="code on">${esc(e.role || '—')}</span><span>${e.done ? '✓ ' : ''}${esc(e.title)}${e.sample ? ' <span class="tag">예시</span>' : ''}</span><small>${esc(e.brand)}</small></div>`).join('') : '<p class="muted">이번 주 일정이 없어요. 어카운트의 캘린더에서 일정을 추가하세요.</p>'}</section>
@@ -1263,11 +1343,12 @@ async function viewAccounts() {
     </div></div>`;
   bindHead();
   const paint = () => {
+    if (!$('#agrid')) return;
     const q = F.q.trim().toLowerCase();
     const list = acc.filter(a => (F.st === 'All' || a.status === F.st) && (!q || (a.name + a.id + a.note).toLowerCase().includes(q)));
     $('#agrid').innerHTML = list.map(accountCard).join('') + `<button class="acard add" data-new-acc2><span>+</span><b>New Account</b><small>브리프와 팀 구성을 함께 설정합니다</small></button>`;
     $('#agrid').querySelectorAll('[data-acc]').forEach(b => b.onclick = () => chooseClient(b.dataset.acc));
-    $('#agrid').querySelector('[data-new-acc2]').onclick = () => go('new-client');
+    $('#agrid').querySelector('[data-new-acc2]').onclick = newAccountModal;
   };
   paint();
   const si = $('#accSearch'); si.value = F.q; si.oninput = () => { F.q = si.value; paint(); };
@@ -1604,11 +1685,25 @@ function fbApproveModal(id) {
 }
 
 /* ---------- 시작 ---------- */
+/* 버디가 여는 주소: #acc=어카운트&tab=탭&sub=칩. 열린 어카운트가 없으면 열고, 다른 어카운트가 열려 있으면 전환 확인창을 띄운다. */
+async function applyHash() {
+  const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+  if (h.get('new')) { history.replaceState(null, '', location.pathname); await go('welcome'); newAccountModal(); return true; }
+  const acc = h.get('acc'); if (!acc) return false;
+  history.replaceState(null, '', location.pathname);
+  if (!S.st.clients.some(c => c.id === acc)) { toast('이 어카운트를 찾을 수 없어요.', 'bad'); return false; }
+  const tab = h.get('tab') || 'overview', sub = h.get('sub') || '';
+  const go2 = () => { const t = TABS.find(x => x.id === tab) || TABS[0]; return goSub(t.id, sub && t.subs.some(y => y[0] === sub) ? sub : (t.subs[0] ? t.subs[0][0] : '')); };
+  if (S.st.active === acc) { await go2(); return true; }
+  if (S.st.active) { switchClientModal(acc); return true; }
+  await pickClient(acc, go2); return true;
+}
+window.addEventListener('hashchange', () => { if (S.st) guard(applyHash)(); });
 (async () => {
   try {
     await refresh();
     if (S.st.running) { S.run = { cmd: 'copy', fields: {}, start: Date.now() / 1000, steps: [], logs: [], items: [], notices: [], running: true, newFiles: [] }; }
-    await (S.st.active ? goSub('overview') : go('welcome'));
+    if (!(await applyHash())) await (S.st.active ? goSub('overview') : go('welcome'));
     if (S.st.running) startPolling();
   } catch (e) {
     $('#view').innerHTML = `<div class="card empty"><b>화면을 불러오지 못했습니다</b>${esc(e.message)}<br>터미널의 서버가 켜져 있는지 확인하세요.</div>`;

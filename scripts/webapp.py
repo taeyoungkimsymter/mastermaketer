@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 import webbrowser
 from decimal import Decimal
 from types import SimpleNamespace
@@ -28,12 +29,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 import feedback  # noqa: E402
 import ad_report  # noqa: E402
+import scaffold  # noqa: E402
 import status  # noqa: E402
 from common import AgencyError  # noqa: E402
 
 ROOT = common.root()
 WEB = ROOT / "web"
 TOKEN = secrets.token_urlsafe(24)
+PORT = 8765
 AREAS = ("deliverables", "review", "research", "production")
 READABLE_EXT = {".md", ".csv", ".json", ".txt"}
 ALLOWED_TOOLS = ["Bash(py -3 scripts/*)", "Bash(python scripts/*)", "Bash(python3 scripts/*)"]
@@ -458,10 +461,23 @@ def read_settings():
         return {}
 
 
-def write_settings(rep_name):
-    """대표 이름(컨펌·수정 요청자). .agency-state/ 는 버전 관리에서 제외된다."""
+BUDDY_SIZES = ("small", "normal", "large")
+
+
+def buddy_size():
+    v = read_settings().get("buddy_size")
+    return v if v in BUDDY_SIZES else "small"
+
+
+def write_settings(rep_name=None, size=None):
+    """대표 이름(컨펌·수정 요청자)·버디 크기. .agency-state/ 는 버전 관리에서 제외된다."""
     d = read_settings()
-    d["rep_name"] = clean_text(rep_name, 40)
+    if rep_name is not None:
+        d["rep_name"] = clean_text(rep_name, 40)
+    if size is not None:
+        if size not in BUDDY_SIZES:
+            raise AgencyError("버디 크기는 작게/보통/크게 중 하나입니다.")
+        d["buddy_size"] = size
     SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
     tmp = SETTINGS_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -496,6 +512,56 @@ def all_events():
                         "role": e.get("role") or EVENT_ROLE.get(e.get("type") or "기타", ""), "sample": bool(e.get("sample")),
                         "link": e.get("link") or ""})
     return out
+
+
+BRIEF_FIELDS = ("목적", "타깃", "제품·서비스", "핵심 메시지", "채널", "일정(마감)", "예산", "필수 문구", "금지 표현", "KPI 정의")
+
+
+def brief_file(client):
+    return common.project_dir(client, "general") / "brief.md"
+
+
+def read_brief(client):
+    """projects/general/brief.md 의 '- 항목: 값' 줄을 읽는다. 미정이면 빈 문자열."""
+    try:
+        text = brief_file(client).read_text(encoding="utf-8")
+    except OSError:
+        return {k: "" for k in BRIEF_FIELDS}
+    out = {}
+    for k in BRIEF_FIELDS:
+        m = re.search(r"^- " + re.escape(k) + r":[ \t]*(.*)$", text, re.M)
+        v = m.group(1).strip() if m else ""
+        out[k] = "" if v in ("", "미정") else v
+    return out
+
+
+def write_brief(client, fields):
+    f = brief_file(client)
+    text = f.read_text(encoding="utf-8")
+    for k in BRIEF_FIELDS:
+        v = clean_text((fields or {}).get(k), 200).replace("\n", " ") or "미정"
+        text = re.sub(r"^(- " + re.escape(k) + r":)[ \t]*.*$", lambda m, v=v: f"{m.group(1)} {v}", text, count=1, flags=re.M)
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(f)
+    return read_brief(client)
+
+
+def new_account(account_id, name):
+    """새 어카운트 폴더를 만든다(scaffold). 이미 열린 어카운트가 없을 때만 바로 세션에 연다."""
+    account_id = clean_text(account_id, 32).lower()
+    common.validate_id(account_id, "client_id")
+    name = clean_text(name, 40)
+    if not name:
+        raise AgencyError("표시명을 입력하세요.")
+    if (common.clients_root() / account_id).exists():
+        raise AgencyError("이미 있는 어카운트 ID입니다. 다른 ID를 쓰세요.")
+    scaffold.make_client(account_id, name)
+    opened = False
+    if not common.get_active():
+        common.set_active(account_id)
+        opened = True
+    return {"id": account_id, "opened": opened}
 
 
 BUDDY_CHARS = ("leo", "luna", "momo", "doyun", "haru", "jun")
@@ -734,6 +800,152 @@ def save_raw(client, name, b64):
     return {"name": p.name, "rows": len(good), "excluded": len(iss)}
 
 
+
+# ---------- 버디 (docs/buddy-spec.md §4). 새 계산 없이 기존 데이터에서 알림 근거만 모은다. 근거가 없으면 알림도 없다. ----------
+
+ROLE_TAB = {"AE": "account", "AP": "strategy", "CW": "copy", "AD": "art", "PD": "film", "MP": "performance"}
+ISSUE_ROLE = {"성과 이상": "MP", "소재 리젝": "AD", "매체 정책·계정": "MP"}
+LEVEL_ORDER = {"urgent": 0, "check": 1, "confirm": 2}
+
+
+def role_of_file(name, area, stage):
+    """결과물 파일 이름으로 역할을 추정한다(web/app.js 의 roleOfFile 과 같은 규칙)."""
+    n = name.lower()
+    if re.match(r"(copy|pdp)", n):
+        return "CW"
+    if n.startswith("report"):
+        return "MP"
+    if n.startswith("meeting"):
+        return "AE"
+    if re.match(r"(shoot|onset|storyboard|script)", n):
+        return "PD"
+    if re.match(r"(ad|kv|creative)", n):
+        return "AD"
+    if re.match(r"(video|concept|proposal|brief)", n) or area == "research":
+        return "PD" if stage in ("script", "storyboard", "shoot_plan") else "AP"
+    return ""
+
+
+DOC_KIND = (("copy", "카피"), ("pdp", "상세페이지 카피"), ("report", "리포트"), ("meeting", "회의록"), ("video", "영상 기획안"),
+            ("shoot", "촬영 계획"), ("onset", "현장 대응 기록"), ("storyboard", "콘티"), ("script", "스크립트"),
+            ("concept", "컨셉안"), ("proposal", "제안서"), ("brief", "브리프"))
+
+
+def human_doc(name):
+    """파일 이름 대신 말풍선에 쓸 이름: report-20261025-v1.md -> 리포트 결과물."""
+    n = name.lower()
+    for k, v in DOC_KIND:
+        if n.startswith(k):
+            return f"{v} 결과물"
+    return "결과물"
+
+
+def _short(x, n=28):
+    x = re.sub(r"\s+", " ", str(x or "")).strip().rstrip(".")
+    return x if len(x) <= n else x[:n - 1] + "…"
+
+
+def _quoted(x):
+    return f"'{_short(x)}'"
+
+
+def buddy_alerts(client, today):
+    """말풍선 알림. text 는 캐릭터 말투 앞뒤에 붙일 한 문장(서술어까지), tag 는 말풍선 윗줄에만 쓰는 분류 라벨이다."""
+    t = today.isoformat()
+    tomorrow = (today + datetime.timedelta(days=1)).isoformat()
+    lib = lib_load(client)
+    out = []
+
+    def add(level, kind, key, role, tag, text, tab, sub, sample=False, when=""):
+        out.append({"id": f"{kind}:{key}", "level": level, "kind": kind, "role": role, "tag": tag, "text": text,
+                    "tab": tab or ROLE_TAB.get(role, "overview"), "sub": sub, "sample": bool(sample), "when": when})
+
+    for r in lib["requests"]:
+        if r.get("status") == "클로즈":
+            continue
+        role, ttl = r.get("role") or "AE", _quoted(r.get("title"))
+        if r.get("due") and r["due"] < t:
+            add("urgent", "req-late", r.get("id"), role, "클라이언트 리퀘스트", f"{ttl} 리퀘스트 데드라인이 지났어요", "account", "req", r.get("sample"), r["due"])
+        elif r.get("due") == tomorrow and r.get("status") == "진행 중":
+            add("check", "req-soon", r.get("id"), role, "클라이언트 리퀘스트", f"{ttl} 리퀘스트 마감이 내일이에요", "account", "req", r.get("sample"), r["due"])
+        if r.get("status") == "배정" and str(r.get("received") or "") >= (today - datetime.timedelta(days=1)).isoformat():
+            add("confirm", "req-new", r.get("id"), role, "클라이언트 리퀘스트", f"{ttl} 요청이 새로 들어왔어요", "account", "req", r.get("sample"), r.get("received"))
+    for e in lib["events"]:
+        if e.get("type") != "콘텐츠" or e.get("done") or not e.get("date"):
+            continue
+        role, ttl = e.get("role") or EVENT_ROLE.get("콘텐츠", "AE"), _quoted(e.get("title"))
+        if e["date"] < t:
+            add("urgent", "post-late", e.get("id"), role, "포스팅", f"{ttl} 포스팅일이 지났는데 아직 올린 기록이 없어요", "account", "cal", e.get("sample"), e["date"])
+        elif e["date"] == tomorrow and not e.get("wait"):
+            add("check", "post-eve", e.get("id"), role, "포스팅", f"내일 올릴 {ttl}, 컨펌 표시가 아직이에요", "account", "cal", e.get("sample"), e["date"])
+    for i in lib["issues"]:
+        if i.get("status") == "미해결" and i.get("type") in ISSUE_ROLE:
+            c = _short(i.get("content"), 40)
+            # 문장으로 쓴 이슈(…해요/…이에요)는 그대로, 명사구로 쓴 이슈는 따옴표로 감싸 문장을 만든다
+            text = c if re.search(r"(요|다|죠|네요)$", c) else f"'{c}' 건이 아직 해결되지 않았어요"
+            add("urgent", "issue", i.get("id"), ISSUE_ROLE[i["type"]], f"이슈 · {i['type']}", text, "account", "issue", i.get("sample"), i.get("date"))
+    # 컨펌 대기 결과물
+    pend, stale = [], []
+    pdir = common.client_dir(client) / "projects"
+    if pdir.is_dir():
+        for d in sorted(pdir.iterdir()):
+            f = d / "status.json"
+            if not f.is_file():
+                continue
+            try:
+                st = json.loads(f.read_text(encoding="utf-8"))
+            except ValueError:
+                continue
+            for name, ds in (st.get("deliverables") or {}).items():
+                if (ds or {}).get("state") != "review_passed":
+                    continue
+                area = next((a for a in AREAS if (d / a / name).is_file()), "deliverables")
+                item = {"name": name, "role": role_of_file(name, area, st.get("stage")) or "AE", "at": str((ds or {}).get("at") or "")[:10]}
+                (stale if item["at"] and item["at"] < (today - datetime.timedelta(days=2)).isoformat() else pend).append(item)
+    for it in stale:
+        days = (today - datetime.date.fromisoformat(it["at"])).days
+        add("check", "confirm-stale", it["name"], it["role"], "컨펌 대기", f"{human_doc(it['name'])} 컨펌이 {days}일째 기다리고 있어요", None, "", False, it["at"])
+    if pend:
+        first = pend[0]
+        text = f"{human_doc(first['name'])} 컨펌이 기다리고 있어요" if len(pend) == 1 else f"컨펌을 기다리는 결과물이 {len(pend)}건 있어요"
+        add("confirm", "confirm-new", "all", first["role"], "컨펌 대기", text, None, "", False, first["at"])
+    out.sort(key=lambda a: (LEVEL_ORDER[a["level"]], a["when"] or "9999", a["id"]))
+    return out
+
+
+def buddy_state():
+    today = common.today_kst()
+    accounts = []
+    for i, c in enumerate(list_clients()):
+        char, char_set = read_buddy(c["id"], i)
+        alerts = buddy_alerts(c["id"], today)
+        state = "urgent" if any(a["level"] == "urgent" for a in alerts) else "alert" if alerts else "work"
+        accounts.append({"id": c["id"], "name": c["name"].split(" (")[0], "char": char, "state": state, "alerts": alerts})
+    return {"now": common.now_kst().isoformat(), "today": today.isoformat(), "size": buddy_size(), "accounts": accounts}
+
+
+def buddy_running():
+    try:
+        return subprocess.run(["pgrep", "-f", "scripts/buddy.py"], capture_output=True).returncode == 0
+    except OSError:
+        return False
+
+
+def launch_buddy():
+    """바탕화면 버디 창(scripts/buddy.py)을 따로 띄운다. 이미 떠 있으면 다시 띄우지 않는다."""
+    if buddy_running():
+        return {"running": True, "started": False}
+    log = common.root() / ".agency-state" / "buddy.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with open(log, "ab") as lf:
+        proc = subprocess.Popen([sys.executable, str(common.root() / "scripts" / "buddy.py"), "--desktop-only", "--port", str(PORT)],
+                                cwd=str(common.root()), stdout=lf, stderr=lf, start_new_session=True)
+    time.sleep(1.5)
+    if proc.poll() not in (None, 0):
+        raise AgencyError("버디 창을 띄우지 못했어요. pywebview 설치를 확인하세요(.venv). 자세한 내용: .agency-state/buddy.log")
+    return {"running": True, "started": True}
+
+
 # ---------- HTTP ----------
 
 class Handler(BaseHTTPRequestHandler):
@@ -777,12 +989,12 @@ class Handler(BaseHTTPRequestHandler):
         self._api("POST", u)
 
     def _static(self, path):
-        rel = "index.html" if path in ("/", "") else path.lstrip("/")
+        rel = "index.html" if path in ("/", "") else "buddy.html" if path == "/buddy" else path.lstrip("/")
         f = (WEB / rel).resolve()
         if WEB.resolve() not in f.parents or not f.is_file():
             return self._send(404, {"error": "not found"})
         data = f.read_bytes()
-        if rel == "index.html":
+        if rel in ("index.html", "buddy.html"):
             data = data.replace(b"__TOKEN__", TOKEN.encode())
         ctype = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
         if f.suffix in (".html", ".js", ".css"):
@@ -809,7 +1021,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/state":
             return {"active": common.get_active(), "clients": list_clients(), "claude": bool(shutil.which("claude")),
                     "running": running, "channels": channels(), "today": common.today_kst().isoformat(),
-                    "rep": read_settings().get("rep_name", "")}
+                    "rep": read_settings().get("rep_name", ""), "buddy_size": buddy_size()}
         if path == "/api/session" and method == "POST":
             common.set_active(common.validate_id(b.get("client"), "client_id"))
             return {"active": common.get_active()}
@@ -881,7 +1093,19 @@ class Handler(BaseHTTPRequestHandler):
             c = need_active()
             return {"item": feedback.reject(c, clean_text(b.get("id"), 20))}
         if path == "/api/settings" and method == "POST":
-            return {"rep": write_settings(b.get("rep_name")).get("rep_name", "")}
+            d = write_settings(b.get("rep_name") if "rep_name" in b else None, b.get("buddy_size"))
+            return {"rep": d.get("rep_name", ""), "buddy_size": buddy_size()}
+        if path == "/api/buddy":
+            return buddy_state()
+        if path == "/api/buddy-launch" and method == "POST":
+            return launch_buddy()
+        if path == "/api/new-account" and method == "POST":
+            return new_account(b.get("id"), b.get("name"))
+        if path == "/api/brief":
+            c = need_active()
+            if method == "POST":
+                return {"fields": write_brief(c, b.get("fields"))}
+            return {"fields": read_brief(c), "labels": list(BRIEF_FIELDS)}
         if path == "/api/buddy-char" and method == "POST":
             return {"char": write_buddy(need_active(), clean_text(b.get("char"), 10))}
         if path == "/api/team" and method == "POST":
@@ -917,6 +1141,8 @@ def main():
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--no-open", action="store_true")
     a = ap.parse_args()
+    global PORT
+    PORT = a.port
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
     url = f"http://127.0.0.1:{a.port}/"
     print(f"Team 화면: {url}  (이 PC에서만 열립니다. 종료: Ctrl+C)")
