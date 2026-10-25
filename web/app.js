@@ -412,8 +412,21 @@ async function go(v, tab, sub) {
   if (v === 'feedback') { try { S.fb = (await api('/api/feedback')).items; } catch (e) { toast(e.message, 'bad'); } }
   render(); window.scrollTo(0, 0);
 }
+/* 브라우저 탭 제목: "마스터마케터 · All Accounts", "마스터마케터 · CJ · Overview" 처럼 화면에 맞게 바꾼다 */
+function setTitle() {
+  const v = S.view, a = S.st && S.st.active, parts = ['마스터마케터'];
+  const top = { welcome: 'All Accounts', calendar: 'Calendar', team: 'Team', reports: 'Reports', 'new-client': (CMDS['new-client'] || {}).title || '새 어카운트 등록' }[v];
+  if (top || !a) parts.push(top || 'All Accounts');
+  else {
+    const cl = S.st.clients.find(c => c.id === a), tab = TABS.find(t => t.id === S.tab), more = moreOf(v);
+    parts.push(cl ? shortName(cl) : a);
+    if (tab) { parts.push(tab.label); const chip = tab.subs.find(x => x[0] === S.sub); if (chip && tab.id !== 'overview') parts.push(chip[1]); }
+    else if (more) parts.push(more[1]);
+  }
+  document.title = parts.join(' · ');
+}
 function render() {
-  renderSide(); renderAcctHead(); renderTop();
+  setTitle(); renderSide(); renderAcctHead(); renderTop();
   const v = S.view;
   if (v === 'welcome') return viewAccounts();
   if (v === 'calendar') return viewCalendarHome();
